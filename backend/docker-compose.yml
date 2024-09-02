@@ -1,0 +1,13 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-container
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  redis-data:
+    driver: local

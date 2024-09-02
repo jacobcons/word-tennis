@@ -26,6 +26,7 @@
     "@types/node": "^22.5.1",
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "ioredis": "^5.4.1",
     "prettier": "^3.3.3"
   }
 }
