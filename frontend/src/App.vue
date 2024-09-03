@@ -3,5 +3,7 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <RouterView />
+  <div class="format max-w-none">
+    <RouterView />
+  </div>
 </template>
