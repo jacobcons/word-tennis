@@ -8,17 +8,8 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
-import pino from 'pino';
-const logger = pino({
-  level: process.env.NODE_ENV === 'dev' ? 'trace' : 'info',
-  transport:
-    process.env.NODE_ENV === 'dev'
-      ? {
-          target: 'pino-pretty',
-          options: { colorize: true },
-        }
-      : undefined,
-});
+import { logRequestResponse, verifySession } from '@/middlewares.js';
+import { redis } from '@/redis.js';
 
 const app = express();
 
@@ -28,31 +19,7 @@ app.use(
   }),
 );
 app.use(express.json());
-app.use((req, res, next) => {
-  const startTime = new Date();
-  logger.debug(
-    {
-      body: req.body,
-    },
-    `Request ${req.method} ${req.url}`,
-  );
-
-  const json = res.json;
-  res.json = (body) => {
-    const responseTime = new Date() - startTime;
-    logger.debug(
-      {
-        body,
-      },
-      `Response ${req.method} ${req.url} ${res.statusCode} ${responseTime}ms`,
-    );
-    res.json = json;
-    return res.json(body);
-  };
-  next();
-});
-
-const redis = new Redis(`${process.env.REDIS_URL}`);
+app.use(logRequestResponse);
 
 app.post('/players', async (req, res) => {
   const playerId = uuidv4();
@@ -73,6 +40,29 @@ app.post('/players', async (req, res) => {
 
   res.json({ sessionId, nickname });
 });
+
+app.post('/add-to-queue', verifySession, async (req, res) => {
+  await redis.zadd('queue', [+new Date(), req.user.id]);
+});
+
+function delay(ms: number) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
+}
+
+(async () => {
+  while (true) {
+    const playersInQueue = await redis.zcount('queue', -Infinity, Infinity);
+    if (playersInQueue >= 2) {
+      const [playerA, playerB] = await redis.zpopmin('queue', 2);
+      console.log(`${playerA} and ${playerB} have been matched!`);
+    }
+    await delay(50);
+  }
+})();
 
 const PORT = 3000;
 app.listen(PORT, () => {

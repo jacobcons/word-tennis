@@ -13,7 +13,7 @@ async function start() {
   ).data
   localStorage.setItem('sessionId', sessionId)
   localStorage.setItem('nickname', nicknameResponse)
-  router.push({ path: '/search' })
+  await router.push({ path: '/search' })
 }
 </script>
 
