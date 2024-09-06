@@ -63,11 +63,15 @@ function delay(ms: number) {
 (async () => {
   while (true) {
     const playersInQueue = await redis.zcount('queue', -Infinity, Infinity);
-    if (playersInQueue >= 2) {
-      const [playerA, , playerB] = await redis.zpopmin('queue', 2);
-      console.log(`${playerA} and ${playerB} have been matched!`);
+    const playersToPair =
+      playersInQueue % 2 == 1 ? playersInQueue - 1 : playersInQueue;
+    if (playersToPair >= 2) {
+      const elements = await redis.zpopmin('queue', playersToPair);
+      for (let i = 0; i <= elements.length - 4; i += 2) {
+        const playerA = elements[i];
+        const playerB = elements[i + 2];
+      }
     }
-    await delay(50);
   }
 })();
 
