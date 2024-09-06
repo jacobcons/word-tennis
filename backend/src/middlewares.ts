@@ -1,16 +1,4 @@
-import pino from 'pino';
-import { redis } from '@/redis.js';
-
-const logger = pino({
-  level: process.env.NODE_ENV === 'dev' ? 'trace' : 'info',
-  transport:
-    process.env.NODE_ENV === 'dev'
-      ? {
-          target: 'pino-pretty',
-          options: { colorize: true },
-        }
-      : undefined,
-});
+import { logger, redis } from '@/utils.js';
 
 export function logRequestResponse(req, res, next) {
   const startTime = new Date();
@@ -36,21 +24,17 @@ export function logRequestResponse(req, res, next) {
   next();
 }
 
-export function verifySession() {
-  return async (req, res, next) => {
-    const sessionId = req.body.sessionId;
-    if (!sessionId) {
-      return res.status(401).json({ message: 'No sessionId provided' });
-    }
+export async function verifySession(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No session ID provided' });
+  }
 
-    const userId = parseInt(
-      (await redis.get(`sessionId:${sessionId}`)) as string,
-      10,
-    );
-    if (!userId) {
-      return res.status(401).json({ message: 'Invalid sessionId' });
-    }
-    req.user = { id: userId };
-    next();
-  };
+  const sessionId = authHeader.split(' ')[1];
+  const userId = await redis.get(`sessionId:${sessionId}`);
+  if (!userId) {
+    return res.status(401).json({ message: 'Invalid session ID' });
+  }
+  req.user = { id: userId };
+  next();
 }

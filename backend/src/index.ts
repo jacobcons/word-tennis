@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { NextFunction } from 'express';
+import 'express-async-errors';
 import cors from 'cors';
-import Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import {
   adjectives,
@@ -9,7 +9,8 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator';
 import { logRequestResponse, verifySession } from '@/middlewares.js';
-import { redis } from '@/redis.js';
+
+import { logger, redis } from '@/utils.js';
 
 const app = express();
 
@@ -43,6 +44,12 @@ app.post('/players', async (req, res) => {
 
 app.post('/add-to-queue', verifySession, async (req, res) => {
   await redis.zadd('queue', [+new Date(), req.user.id]);
+  res.end();
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  logger.error(err);
+  return res.status(500).json({ error: 'something went wrong!' });
 });
 
 function delay(ms: number) {
@@ -57,7 +64,7 @@ function delay(ms: number) {
   while (true) {
     const playersInQueue = await redis.zcount('queue', -Infinity, Infinity);
     if (playersInQueue >= 2) {
-      const [playerA, playerB] = await redis.zpopmin('queue', 2);
+      const [playerA, , playerB] = await redis.zpopmin('queue', 2);
       console.log(`${playerA} and ${playerB} have been matched!`);
     }
     await delay(50);

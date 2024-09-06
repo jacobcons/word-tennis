@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { api } from '@/utils.js'
+import { addBearerTokenToAxios, api } from '@/utils.js'
 import router from '@/router/index.js'
 
 const nickname = ref('')
 // create player and go to search view
 async function start() {
   const { sessionId, nickname: nicknameResponse } = (
-    await api.post<{ sessionId: string; nickname: string }>('/players', {
+    await api.post('players', {
       nickname: nickname.value
     })
   ).data
   localStorage.setItem('sessionId', sessionId)
   localStorage.setItem('nickname', nicknameResponse)
+  addBearerTokenToAxios(sessionId)
   await router.push({ path: '/search' })
 }
 </script>

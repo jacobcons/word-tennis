@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { api } from '@/utils.js'
 
 const nickname = localStorage.getItem('nickname')
 const searchingMessage = ref('Searching for players')
@@ -10,6 +11,9 @@ setInterval(() => {
     ? searchingMessage.value.slice(0, length - 3)
     : `${searchingMessage.value}.`
 }, 250)
+onMounted(async () => {
+  await api.post('add-to-queue')
+})
 </script>
 
 <template>
