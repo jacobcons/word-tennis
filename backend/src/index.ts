@@ -1,4 +1,4 @@
-import express, { NextFunction } from 'express';
+import express, { NextFunction, ErrorRequestHandler } from 'express';
 import 'express-async-errors';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,20 +8,36 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
-import { logRequestResponse, verifySession } from '@/middlewares.js';
-
+import {
+  logRequestResponse,
+  verifySession,
+  verifySessionWs,
+} from '@/middlewares.js';
 import { logger, redis } from '@/utils.js';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 const app = express();
+const server = createServer(app);
+const corsConfig = {
+  origin: process.env.FRONTEND_URL,
+};
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-  }),
-);
+// socket.io
+const io = new Server(server, {
+  cors: corsConfig,
+});
+io.use(verifySessionWs);
+io.on('connection', (socket) => {
+  socket.emit('test');
+});
+
+// middlewares
+app.use(cors(corsConfig));
 app.use(express.json());
 app.use(logRequestResponse);
 
+// routes
 app.post('/players', async (req, res) => {
   const playerId = uuidv4();
 
@@ -42,22 +58,20 @@ app.post('/players', async (req, res) => {
   res.json({ sessionId, nickname });
 });
 
-app.post('/add-to-queue', verifySession, async (req, res) => {
-  await redis.zadd('queue', [+new Date(), req.user.id]);
-  res.end();
+app.post('/queue', verifySession, async (req, res) => {
+  const userId = req.user.id;
+  await redis.zadd('queue', [+new Date(), userId]);
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+const errorHandler: ErrorRequestHandler = (err, req, res) => {
   logger.error(err);
-  return res.status(500).json({ error: 'something went wrong!' });
-});
+  res.status(500).json({ error: 'something went wrong!' });
+};
+app.use(errorHandler);
 
-function delay(ms: number) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve();
-    }, ms);
-  });
+// queue system that pairs players
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 (async () => {
@@ -68,14 +82,17 @@ function delay(ms: number) {
     if (playersToPair >= 2) {
       const elements = await redis.zpopmin('queue', playersToPair);
       for (let i = 0; i <= elements.length - 4; i += 2) {
-        const playerA = elements[i];
-        const playerB = elements[i + 2];
+        const playerAId = elements[i];
+        const playerBId = elements[i + 2];
       }
+    } else {
+      await delay(50);
     }
   }
 })();
 
+// start the HTTP server
 const PORT = 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });

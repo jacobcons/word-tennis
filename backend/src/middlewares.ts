@@ -1,7 +1,7 @@
 import { logger, redis } from '@/utils.js';
 
 export function logRequestResponse(req, res, next) {
-  const startTime = new Date();
+  const startTime = new Date().getTime();
   logger.debug(
     {
       body: req.body,
@@ -11,7 +11,7 @@ export function logRequestResponse(req, res, next) {
 
   const json = res.json;
   res.json = (body) => {
-    const responseTime = new Date() - startTime;
+    const responseTime = new Date().getTime() - startTime;
     logger.debug(
       {
         body,
@@ -36,5 +36,15 @@ export async function verifySession(req, res, next) {
     return res.status(401).json({ message: 'Invalid session ID' });
   }
   req.user = { id: userId };
+  next();
+}
+
+export async function verifySessionWs(socket, next) {
+  const sessionId = socket.handshake.auth.token;
+  const userId = await redis.get(`sessionId:${sessionId}`);
+  if (!userId) {
+    return next(Error('Invalid Session Id'));
+  }
+  socket.user = { id: userId };
   next();
 }

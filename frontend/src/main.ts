@@ -5,6 +5,14 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import { addBearerTokenToAxios, connectToWsServer, socket } from '@/utils.js'
+
+const sessionId = localStorage.getItem('sessionId')
+
+if (sessionId) {
+  addBearerTokenToAxios(sessionId)
+  connectToWsServer(sessionId)
+}
 
 const app = createApp(App)
 

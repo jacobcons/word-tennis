@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { addBearerTokenToAxios, api } from '@/utils.js'
+import { addBearerTokenToAxios, api, connectToWsServer } from '@/utils.js'
 import router from '@/router/index.js'
 
 const nickname = ref('')
@@ -14,6 +14,7 @@ async function start() {
   localStorage.setItem('sessionId', sessionId)
   localStorage.setItem('nickname', nicknameResponse)
   addBearerTokenToAxios(sessionId)
+  connectToWsServer(sessionId)
   await router.push({ path: '/search' })
 }
 </script>

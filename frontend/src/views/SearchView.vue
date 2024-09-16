@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { api } from '@/utils.js'
+import { api, socket } from '@/utils.js'
 
 const nickname = localStorage.getItem('nickname')
 const searchingMessage = ref('Searching for players')
