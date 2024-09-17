@@ -10,11 +10,9 @@ export function addBearerTokenToAxios(token: String) {
 
 export let socket: Socket
 export function connectToWsServer(sessionId: String) {
-  if (!socket) {
-    socket = io(import.meta.env.VITE_BACKEND_URL, {
-      auth: {
-        token: sessionId
-      }
-    })
-  }
+  socket = io(import.meta.env.VITE_BACKEND_URL, {
+    auth: {
+      token: sessionId
+    }
+  })
 }

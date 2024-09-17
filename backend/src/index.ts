@@ -28,9 +28,7 @@ const io = new Server(server, {
   cors: corsConfig,
 });
 io.use(verifySessionWs);
-io.on('connection', (socket) => {
-  socket.emit('test');
-});
+io.on('connection', (socket) => {});
 
 // middlewares
 app.use(cors(corsConfig));
@@ -58,12 +56,13 @@ app.post('/players', async (req, res) => {
   res.json({ sessionId, nickname });
 });
 
-app.post('/queue', verifySession, async (req, res) => {
-  const userId = req.user.id;
+app.post('/add-to-queue', verifySession, async (req, res) => {
+  const userId = req.player.id;
   await redis.zadd('queue', [+new Date(), userId]);
+  res.end();
 });
 
-const errorHandler: ErrorRequestHandler = (err, req, res) => {
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err);
   res.status(500).json({ error: 'something went wrong!' });
 };
@@ -84,6 +83,22 @@ function delay(ms: number): Promise<void> {
       for (let i = 0; i <= elements.length - 4; i += 2) {
         const playerAId = elements[i];
         const playerBId = elements[i + 2];
+
+        const gameId = uuidv4();
+        const startingPlayerId = Math.random() < 0.5 ? playerAId : playerBId;
+        const [playerANickname, playerBNickname] = await Promise.all([
+          redis.hget(`player:${playerAId}`, 'nickname'),
+          redis.hget(`player:${playerBId}`, 'nickname'),
+        ]);
+        await redis.hset(`game:${gameId}`, {
+          playerAId,
+          playerANickname,
+          playerBId,
+          playerBNickname,
+          startingPlayerId,
+          startTimestamp: new Date().getTime(),
+        });
+        io.to(playerAId).to(playerBId).emit('matched', gameId);
       }
     } else {
       await delay(50);

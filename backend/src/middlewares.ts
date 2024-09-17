@@ -31,20 +31,20 @@ export async function verifySession(req, res, next) {
   }
 
   const sessionId = authHeader.split(' ')[1];
-  const userId = await redis.get(`sessionId:${sessionId}`);
-  if (!userId) {
+  const playerId = await redis.get(`sessionId:${sessionId}`);
+  if (!playerId) {
     return res.status(401).json({ message: 'Invalid session ID' });
   }
-  req.user = { id: userId };
+  req.player = { id: playerId };
   next();
 }
 
 export async function verifySessionWs(socket, next) {
   const sessionId = socket.handshake.auth.token;
-  const userId = await redis.get(`sessionId:${sessionId}`);
-  if (!userId) {
+  const playerId = await redis.get(`sessionId:${sessionId}`);
+  if (!playerId) {
     return next(Error('Invalid Session Id'));
   }
-  socket.user = { id: userId };
+  socket.join(playerId);
   next();
 }

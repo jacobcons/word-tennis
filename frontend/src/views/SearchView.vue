@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api, socket } from '@/utils.js'
+import router from '@/router/index.js'
 
 const nickname = localStorage.getItem('nickname')
 const searchingMessage = ref('Searching for players')
@@ -13,14 +14,18 @@ setInterval(() => {
 }, 250)
 onMounted(async () => {
   await api.post('add-to-queue')
+  socket.on('matched', async (gameId) => {
+    console.log(gameId)
+    await router.push({ path: `/game/${gameId}` })
+  })
 })
 </script>
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
     <div class="mx-auto flex max-w-lg flex-col items-center gap-y-6">
-      <h2 class="text-2xl">Hey {{ nickname }}!</h2>
-      <p class="text-xl">{{ searchingMessage }}</p>
+      <span class="text-2xl">Hey {{ nickname }}!</span>
+      <span class="text-xl">{{ searchingMessage }}</span>
       <div role="status">
         <svg
           aria-hidden="true"
