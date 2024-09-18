@@ -32,7 +32,7 @@ function setRandomNickname() {
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
-    <div class="mx-auto flex max-w-lg flex-col items-center gap-y-6 text-center">
+    <div class="mx-auto flex max-w-lg flex-col items-center gap-y-6 px-4 text-center">
       <h1 class="">Word Tennis</h1>
       <p class="">
         This is a multiplayer browser game in which users must type related words back and fourth
@@ -47,6 +47,7 @@ function setRandomNickname() {
             placeholder="Enter Nickname..."
             class="mb-6 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
             required
+            maxlength="30"
           />
           <img
             src="/dice.svg"

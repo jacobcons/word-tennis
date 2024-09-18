@@ -35,8 +35,8 @@ onBeforeUnmount(async () => {
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
-    <div class="mx-auto flex max-w-lg flex-col items-center gap-y-6">
-      <span class="text-2xl">Hey {{ nickname }}!</span>
+    <div class="mx-auto flex max-w-lg flex-col items-center gap-y-6 px-4">
+      <span class="break-all text-2xl">Hey {{ nickname }}!</span>
       <span class="text-xl">{{ searchingMessage }}</span>
       <div role="status">
         <svg

@@ -32,9 +32,16 @@ app.use(logRequestResponse);
 
 // routes
 app.put('/players', async (req, res) => {
-  const nickname = req.body?.nickname;
-  if (!nickname || nickname.trim() === '') {
+  let nickname = req.body?.nickname;
+  if (!nickname) {
     res.status(400).json({ error: 'Please provide a nickname' });
+  }
+  nickname = nickname.trim();
+  const maxNicknameLength = 30;
+  if (nickname === '' || nickname.length > maxNicknameLength) {
+    res.status(400).json({
+      error: `Please provide a nickname that is ${maxNicknameLength} characters or less`,
+    });
   }
 
   const sessionId = req.body?.currentSessionId;
