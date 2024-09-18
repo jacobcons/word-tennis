@@ -10,6 +10,7 @@ import {
 import { logger, redis } from '@/utils.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { addSeconds } from 'date-fns';
 
 const app = express();
 const server = createServer(app);
@@ -98,7 +99,7 @@ function delay(ms: number): Promise<void> {
           playerBId,
           playerBNickname,
           startingPlayerId,
-          startTimestamp: new Date().getTime(),
+          startTimestamp: addSeconds(new Date(), 3),
         });
         io.to(playerAId).to(playerBId).emit('matched', gameId);
       }
