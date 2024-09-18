@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, useTemplateRef } from 'vue'
 import { addBearerTokenToAxios, api, connectToWsServer } from '@/utils.js'
 import router from '@/router/index.js'
 import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator'
@@ -47,7 +47,6 @@ function setRandomNickname() {
             placeholder="Enter Nickname..."
             class="mb-6 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
             required
-            @keydown.enter="start"
           />
           <img
             src="/dice.svg"
