@@ -34,7 +34,6 @@
     "pino": "^9.4.0",
     "prettier": "^3.3.3",
     "socket.io": "^4.7.5",
-    "unique-names-generator": "^4.7.1",
     "uuid": "^10.0.0"
   }
 }

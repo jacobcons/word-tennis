@@ -3,12 +3,6 @@ import 'express-async-errors';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  adjectives,
-  animals,
-  colors,
-  uniqueNamesGenerator,
-} from 'unique-names-generator';
-import {
   logRequestResponse,
   verifySession,
   verifySessionWs,
@@ -37,17 +31,13 @@ app.use(logRequestResponse);
 
 // routes
 app.post('/players', async (req, res) => {
+  const nickname = req.body?.nickname;
+  if (!nickname || nickname.trim() === '') {
+    res.status(400).json({ error: 'Please provide a nickname' });
+  }
+
   const playerId = uuidv4();
-
-  const requestNickname = req.body?.nickname;
-  const isNoNickname =
-    requestNickname === undefined || requestNickname.trim() === '';
-  const nickname = isNoNickname
-    ? uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] })
-    : requestNickname;
-
   const sessionId = uuidv4();
-
   await Promise.all([
     redis.hset(`player:${playerId}`, { nickname }),
     redis.set(`sessionId:${sessionId}`, playerId),
