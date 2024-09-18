@@ -54,9 +54,13 @@ app.put('/players', async (req, res) => {
   res.end();
 });
 
-app.post('/add-to-queue', verifySession, async (req, res) => {
-  const userId = req.player.id;
-  await redis.zadd('queue', [+new Date(), userId]);
+app.post('/join-queue', verifySession, async (req, res) => {
+  await redis.zadd('queue', [+new Date(), req.player.id]);
+  res.end();
+});
+
+app.post('/leave-queue', verifySession, async (req, res) => {
+  await redis.zrem('queue', req.player.id);
   res.end();
 });
 

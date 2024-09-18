@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { api, socket } from '@/utils.js'
 import router from '@/router/index.js'
 
@@ -12,12 +12,24 @@ setInterval(() => {
     ? searchingMessage.value.slice(0, length - 3)
     : `${searchingMessage.value}.`
 }, 250)
+
+async function leaveQueue() {
+  await api.post('leave-queue')
+}
+
 onMounted(async () => {
-  await api.post('add-to-queue')
+  await api.post('join-queue')
   socket.on('matched', async (gameId) => {
     console.log(gameId)
     await router.push({ path: `/game/${gameId}` })
   })
+  window.addEventListener('beforeunload', leaveQueue)
+})
+
+onBeforeUnmount(async () => {
+  await leaveQueue()
+  socket.removeAllListeners()
+  window.removeEventListener('beforeunload', leaveQueue)
 })
 </script>
 
