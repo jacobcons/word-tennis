@@ -30,20 +30,28 @@ app.use(express.json());
 app.use(logRequestResponse);
 
 // routes
-app.post('/players', async (req, res) => {
+app.put('/players', async (req, res) => {
   const nickname = req.body?.nickname;
   if (!nickname || nickname.trim() === '') {
     res.status(400).json({ error: 'Please provide a nickname' });
   }
 
-  const playerId = uuidv4();
-  const sessionId = uuidv4();
-  await Promise.all([
-    redis.hset(`player:${playerId}`, { nickname }),
-    redis.set(`sessionId:${sessionId}`, playerId),
-  ]);
+  const sessionId = req.body?.currentSessionId;
+  const playerId = await redis.get(`sessionId:${sessionId}`);
+  // session invalid => gen player, session, set nickname
+  if (!playerId) {
+    const playerId = uuidv4();
+    const newSessionId = uuidv4();
+    await Promise.all([
+      redis.hset(`player:${playerId}`, { nickname }),
+      redis.set(`sessionId:${newSessionId}`, playerId),
+    ]);
+    return res.json({ newSessionId });
+  }
 
-  res.json({ sessionId, nickname });
+  // session valid => update nickname of existing player
+  await redis.hset(`player:${playerId}`, { nickname });
+  res.end();
 });
 
 app.post('/add-to-queue', verifySession, async (req, res) => {

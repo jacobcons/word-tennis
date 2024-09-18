@@ -8,16 +8,20 @@ const nickname = ref('')
 // create player and go to search view
 async function start() {
   const currentSessionId = localStorage.getItem('sessionId')
-  const { sessionId, nickname: nicknameResponse } = (
-    await api.post('players', {
+  // session invalid => create new player & session => update existing player's nickname
+  const { newSessionId } = (
+    await api.put('players', {
       nickname: nickname.value,
       currentSessionId
     })
   ).data
-  localStorage.setItem('sessionId', sessionId)
-  localStorage.setItem('nickname', nicknameResponse)
-  addBearerTokenToAxios(sessionId)
-  connectToWsServer(sessionId)
+
+  if (newSessionId) {
+    localStorage.setItem('sessionId', newSessionId)
+    addBearerTokenToAxios(newSessionId)
+    connectToWsServer(newSessionId)
+  }
+  localStorage.setItem('nickname', nickname.value)
   await router.push({ path: '/search' })
 }
 
