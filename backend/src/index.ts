@@ -72,9 +72,26 @@ app.post('/leave-queue', verifySession, async (req, res) => {
   res.end();
 });
 
+type GameData = {
+  playerAId: string;
+  playerANickname: string;
+  playerBId: string;
+  playerBNickname: string;
+  startingPlayerId: string;
+  startTimestamp: string;
+};
+app.get('/games/:id', verifySession, async (req, res) => {
+  const gameData = (await redis.hgetall(`game:${req.params.id}`)) as GameData;
+  if (!gameData) {
+    res.status(404).json({ message: `no game with id ${req.params.id} found` });
+  }
+  gameData.startTimestamp = addSeconds(new Date(), 3).toISOString();
+  res.json(gameData);
+});
+
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err);
-  res.status(500).json({ error: 'something went wrong!' });
+  res.status(500).json({ message: 'something went wrong!' });
 };
 app.use(errorHandler);
 
@@ -106,7 +123,7 @@ function delay(ms: number): Promise<void> {
           playerBId,
           playerBNickname,
           startingPlayerId,
-          startTimestamp: addSeconds(new Date(), 3),
+          startTimestamp: addSeconds(new Date(), 3).toISOString(),
         });
         io.to(playerAId).to(playerBId).emit('matched', gameId);
       }

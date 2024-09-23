@@ -4,8 +4,9 @@ import { api, socket } from '@/utils.js'
 import router from '@/router/index.js'
 
 const nickname = localStorage.getItem('nickname')
+
 const searchingMessage = ref('Searching for players')
-setInterval(() => {
+const searchingMessageIntervalId = setInterval(() => {
   const length = searchingMessage.value.length
   const areLastThreeCharactersDots = searchingMessage.value.slice(length - 3, length) === '...'
   searchingMessage.value = areLastThreeCharactersDots
@@ -13,20 +14,25 @@ setInterval(() => {
     : `${searchingMessage.value}.`
 }, 250)
 
+;(async () => {
+  await api.post('join-queue')
+})()
+
+socket.on('matched', async (gameId) => {
+  console.log(gameId)
+  await router.push({ path: `/game/${gameId}` })
+})
+
 async function leaveQueue() {
   await api.post('leave-queue')
 }
 
 onMounted(async () => {
-  await api.post('join-queue')
-  socket.on('matched', async (gameId) => {
-    console.log(gameId)
-    await router.push({ path: `/game/${gameId}` })
-  })
   window.addEventListener('beforeunload', leaveQueue)
 })
 
 onBeforeUnmount(async () => {
+  if (searchingMessageIntervalId) clearInterval(searchingMessageIntervalId)
   await leaveQueue()
   socket.removeAllListeners()
   window.removeEventListener('beforeunload', leaveQueue)

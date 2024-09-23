@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { api, socket } from '@/utils.js'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
+;(async () => {
+  const gameData = (await api.get(`/games/${route.params.id}`)).data as any
+  console.log(new Date(gameData.startTimestamp) - new Date())
+})()
+
+// countdown game timer
 const countdown = ref(3)
 const countdownIntervalId = setInterval(() => {
   countdown.value -= 1
@@ -15,9 +23,9 @@ function sendWord() {
   console.log(word.value)
 }
 
+// turn timer
 const TURN_TIME = 5
 const turnTimeLeft = ref(TURN_TIME)
-
 const turnTimeIntervalId = setInterval(() => {
   turnTimeLeft.value -= 1
   if (turnTimeLeft.value == 0) {
@@ -25,6 +33,7 @@ const turnTimeIntervalId = setInterval(() => {
   }
 }, 1000)
 
+// turn timer bar
 const turnTimeBarWidth = ref(100)
 const TICK_LENGTH_MS = 5
 const DECREASE_PER_TICK = TICK_LENGTH_MS / 50
