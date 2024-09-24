@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { api, socket } from '@/utils.js'
+import { api, socket, gameData } from '@/utils.js'
 import router from '@/router/index.js'
 
 const nickname = localStorage.getItem('nickname')
@@ -18,9 +18,9 @@ const searchingMessageIntervalId = setInterval(() => {
   await api.post('join-queue')
 })()
 
-socket.on('matched', async (gameId) => {
-  console.log(gameId)
-  await router.push({ path: `/game/${gameId}` })
+socket.on('matched', async (serverGameData) => {
+  gameData.value = serverGameData
+  await router.push({ path: `/game/${gameData.value.gameId}` })
 })
 
 async function leaveQueue() {

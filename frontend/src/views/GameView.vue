@@ -1,20 +1,39 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { api, socket } from '@/utils.js'
+import { api, gameData, socket } from '@/utils.js'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-;(async () => {
-  const gameData = (await api.get(`/games/${route.params.id}`)).data as any
-  console.log(new Date(gameData.startTimestamp) - new Date())
-})()
+
+const bigText = ref(1)
+const TURN_TIME = 5
+const turnTimeLeft = ref(TURN_TIME)
+const turnTimeBarWidth = ref(100)
 
 // countdown game timer
-const countdown = ref(3)
 const countdownIntervalId = setInterval(() => {
-  countdown.value -= 1
-  if (countdown.value == 0) {
+  bigText.value -= 1
+  if (bigText.value == 0) {
+    bigText.value = NaN
     clearInterval(countdownIntervalId)
+
+    // turn timer
+    const turnTimeIntervalId = setInterval(() => {
+      turnTimeLeft.value -= 1
+      if (turnTimeLeft.value == 0) {
+        clearInterval(turnTimeIntervalId)
+      }
+    }, 1000)
+
+    // turn timer bar
+    const TICK_LENGTH_MS = 5
+    const DECREASE_PER_TICK = TICK_LENGTH_MS / 50
+    const turnTimeBarIntervalId = setInterval(() => {
+      turnTimeBarWidth.value -= DECREASE_PER_TICK
+      if (turnTimeBarWidth.value <= 0) {
+        clearInterval(turnTimeBarIntervalId)
+      }
+    }, TICK_LENGTH_MS)
   }
 }, 1000)
 
@@ -23,33 +42,14 @@ function sendWord() {
   console.log(word.value)
 }
 
-// turn timer
-const TURN_TIME = 5
-const turnTimeLeft = ref(TURN_TIME)
-const turnTimeIntervalId = setInterval(() => {
-  turnTimeLeft.value -= 1
-  if (turnTimeLeft.value == 0) {
-    clearInterval(turnTimeIntervalId)
-  }
-}, 1000)
-
-// turn timer bar
-const turnTimeBarWidth = ref(100)
-const TICK_LENGTH_MS = 5
-const DECREASE_PER_TICK = TICK_LENGTH_MS / 50
-const turnTimeBarIntervalId = setInterval(() => {
-  turnTimeBarWidth.value -= DECREASE_PER_TICK
-  if (turnTimeBarWidth.value == 0) {
-    clearInterval(turnTimeBarIntervalId)
-  }
-}, TICK_LENGTH_MS)
+const currentWord = ref('a')
 </script>
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
     <div class="mx-auto flex w-96 max-w-full flex-col items-center gap-y-20 px-4">
       <h2 class="text-2xl">John's Turn (you)</h2>
-      <span class="text-8xl">{{ countdown }}</span>
+      <span class="text-8xl">{{ bigText }}</span>
       <form @submit.prevent="sendWord" class="w-full">
         <div class="mb-1 flex justify-between">
           <span class="text-base font-medium text-blue-700 dark:text-white">Timer</span>

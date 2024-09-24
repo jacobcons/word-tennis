@@ -72,20 +72,20 @@ app.post('/leave-queue', verifySession, async (req, res) => {
   res.end();
 });
 
-type GameData = {
-  playerAId: string;
-  playerANickname: string;
-  playerBId: string;
-  playerBNickname: string;
-  startingPlayerId: string;
-  startTimestamp: string;
-};
 app.get('/games/:id', verifySession, async (req, res) => {
+  type GameData = {
+    playerAId: string;
+    playerANickname: string;
+    playerBId: string;
+    playerBNickname: string;
+    startingPlayerId: string;
+    startTimestamp: string;
+  };
   const gameData = (await redis.hgetall(`game:${req.params.id}`)) as GameData;
   if (!gameData) {
     res.status(404).json({ message: `no game with id ${req.params.id} found` });
   }
-  gameData.startTimestamp = addSeconds(new Date(), 3).toISOString();
+  //gameData.startTimestamp = addSeconds(new Date(), 3).toISOString();
   res.json(gameData);
 });
 
@@ -117,15 +117,18 @@ function delay(ms: number): Promise<void> {
           redis.hget(`player:${playerAId}`, 'nickname'),
           redis.hget(`player:${playerBId}`, 'nickname'),
         ]);
-        await redis.hset(`game:${gameId}`, {
+        const gameData = {
           playerAId,
           playerANickname,
           playerBId,
           playerBNickname,
           startingPlayerId,
           startTimestamp: addSeconds(new Date(), 3).toISOString(),
-        });
-        io.to(playerAId).to(playerBId).emit('matched', gameId);
+        };
+        await redis.hset(`game:${gameId}`, { gameData });
+        io.to(playerAId)
+          .to(playerBId)
+          .emit('matched', { gameId, ...gameData });
       }
     } else {
       await delay(50);
