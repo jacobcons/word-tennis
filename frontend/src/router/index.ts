@@ -5,7 +5,7 @@ import GameView from '@/views/GameView.vue'
 
 //createWebHistory(import.meta.env.BASE_URL)
 const router = createRouter({
-  history: createMemoryHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',

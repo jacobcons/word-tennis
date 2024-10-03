@@ -128,7 +128,12 @@ function delay(ms: number): Promise<void> {
         await redis.hset(`game:${gameId}`, { gameData });
         io.to(playerAId)
           .to(playerBId)
-          .emit('matched', { gameId, ...gameData });
+          .emit('matched', {
+            gameId,
+            ...gameData,
+            COUNTDOWN_TIME_S: 3,
+            TURN_TIME_S: 5,
+          });
       }
     } else {
       await delay(50);

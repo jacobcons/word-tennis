@@ -5,16 +5,15 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const bigText = ref(1)
-const TURN_TIME = 5
-const turnTimeLeft = ref(TURN_TIME)
+const countdownTimeLeft = ref(gameData.value.COUNTDOWN_TIME_S)
+const TURN_TIME_S = gameData.value.TURN_TIME_S
+const turnTimeLeft = ref(TURN_TIME_S)
 const turnTimeBarWidth = ref(100)
 
 // countdown game timer
 const countdownIntervalId = setInterval(() => {
-  bigText.value -= 1
-  if (bigText.value == 0) {
-    bigText.value = NaN
+  countdownTimeLeft.value -= 1
+  if (countdownTimeLeft.value == 0) {
     clearInterval(countdownIntervalId)
 
     // turn timer
@@ -42,14 +41,14 @@ function sendWord() {
   console.log(word.value)
 }
 
-const currentWord = ref('a')
+const currentWord = ref('')
 </script>
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
     <div class="mx-auto flex w-96 max-w-full flex-col items-center gap-y-20 px-4">
       <h2 class="text-2xl">John's Turn (you)</h2>
-      <span class="text-8xl">{{ bigText }}</span>
+      <span class="text-8xl">{{ countdownTimeLeft > 0 ? countdownTimeLeft : currentWord }}</span>
       <form @submit.prevent="sendWord" class="w-full">
         <div class="mb-1 flex justify-between">
           <span class="text-base font-medium text-blue-700 dark:text-white">Timer</span>

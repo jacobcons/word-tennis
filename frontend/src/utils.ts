@@ -26,16 +26,23 @@ type GameData = {
   playerBNickname: string
   startingPlayerId: string
   startTimestamp: string
+  COUNTDOWN_TIME_S: number
+  TURN_TIME_S: number
 }
-export const gameData = ref<GameData>({
-  gameId: '',
-  playerAId: '',
-  playerANickname: '',
-  playerBId: '',
-  playerBNickname: '',
-  startingPlayerId: '',
-  startTimestamp: ''
-})
+
+export const gameData: { value: GameData } = {
+  value: {
+    gameId: '',
+    playerAId: '',
+    playerANickname: '',
+    playerBId: '',
+    playerBNickname: '',
+    startingPlayerId: '',
+    startTimestamp: '',
+    COUNTDOWN_TIME_S: NaN,
+    TURN_TIME_S: NaN
+  }
+}
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
