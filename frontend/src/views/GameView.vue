@@ -5,36 +5,45 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
+// timer variables
 const countdownTimeLeft = ref(gameData.value.COUNTDOWN_TIME_S)
 const TURN_TIME_S = gameData.value.TURN_TIME_S
 const turnTimeLeft = ref(TURN_TIME_S)
 const turnTimeBarWidth = ref(100)
 
-// countdown game timer
-const countdownIntervalId = setInterval(() => {
-  countdownTimeLeft.value -= 1
-  if (countdownTimeLeft.value == 0) {
-    clearInterval(countdownIntervalId)
+// turn variables
+const currentPlayerIndex = ref(0)
+const currentPlayer = computed(() => gameData.value.players)
 
-    // turn timer
-    const turnTimeIntervalId = setInterval(() => {
-      turnTimeLeft.value -= 1
-      if (turnTimeLeft.value == 0) {
-        clearInterval(turnTimeIntervalId)
-      }
-    }, 1000)
+onMounted(() => {
+  // start countdown game timer
+  const countdownIntervalId = setInterval(() => {
+    countdownTimeLeft.value -= 1
+    if (countdownTimeLeft.value == 0) {
+      clearInterval(countdownIntervalId)
 
-    // turn timer bar
-    const TICK_LENGTH_MS = 5
-    const DECREASE_PER_TICK = TICK_LENGTH_MS / 50
-    const turnTimeBarIntervalId = setInterval(() => {
-      turnTimeBarWidth.value -= DECREASE_PER_TICK
-      if (turnTimeBarWidth.value <= 0) {
-        clearInterval(turnTimeBarIntervalId)
-      }
-    }, TICK_LENGTH_MS)
-  }
-}, 1000)
+      // start turn timer when countdown is done
+      const turnTimeIntervalId = setInterval(() => {
+        turnTimeLeft.value -= 1
+        if (turnTimeLeft.value == 0) {
+          clearInterval(turnTimeIntervalId)
+        }
+      }, 1000)
+
+      // turn timer bar
+      const TICK_LENGTH_MS = 5
+      const DECREASE_PER_TICK = TICK_LENGTH_MS / 50
+      const turnTimeBarIntervalId = setInterval(() => {
+        turnTimeBarWidth.value -= DECREASE_PER_TICK
+        if (turnTimeBarWidth.value <= 0) {
+          clearInterval(turnTimeBarIntervalId)
+        }
+      }, TICK_LENGTH_MS)
+    }
+  }, 1000)
+
+  // turn
+})
 
 const word = ref('')
 function sendWord() {

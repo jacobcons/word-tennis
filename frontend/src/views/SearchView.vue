@@ -3,40 +3,44 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { api, socket, gameData } from '@/utils.js'
 import router from '@/router/index.js'
 
-const nickname = localStorage.getItem('nickname')
-
-const searchingMessage = ref('Searching for players')
-const searchingMessageIntervalId = setInterval(() => {
-  const length = searchingMessage.value.length
-  const areLastThreeCharactersDots = searchingMessage.value.slice(length - 3, length) === '...'
-  searchingMessage.value = areLastThreeCharactersDots
-    ? searchingMessage.value.slice(0, length - 3)
-    : `${searchingMessage.value}.`
-}, 250)
-
+// join queue
 ;(async () => {
   await api.post('join-queue')
 })()
 
+// match with player => go to game view
 socket.on('matched', async (serverGameData) => {
   gameData.value = serverGameData
   await router.push({ path: `/game/${gameData.value.gameId}` })
 })
 
-async function leaveQueue() {
-  await api.post('leave-queue')
-}
-
+// display animated searching for player message
+// close window => leave queue
+const nickname = localStorage.getItem('nickname')
+const searchingMessage = ref('Searching for players')
+let searchingMessageIntervalId: number
 onMounted(async () => {
+  searchingMessageIntervalId = setInterval(() => {
+    const length = searchingMessage.value.length
+    const areLastThreeCharactersDots = searchingMessage.value.slice(length - 3, length) === '...'
+    searchingMessage.value = areLastThreeCharactersDots
+      ? searchingMessage.value.slice(0, length - 3)
+      : `${searchingMessage.value}.`
+  }, 250)
   window.addEventListener('beforeunload', leaveQueue)
 })
 
+// teardown
 onBeforeUnmount(async () => {
   if (searchingMessageIntervalId) clearInterval(searchingMessageIntervalId)
   await leaveQueue()
   socket.removeAllListeners()
   window.removeEventListener('beforeunload', leaveQueue)
 })
+
+async function leaveQueue() {
+  await api.post('leave-queue')
+}
 </script>
 
 <template>

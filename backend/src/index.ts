@@ -11,6 +11,7 @@ import { logger, redis } from '@/utils.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { addSeconds } from 'date-fns';
+import { createOrUpdatePlayer } from '@/handlers.js'
 
 const app = express();
 const server = createServer(app);
@@ -31,36 +32,7 @@ app.use(express.json());
 app.use(logRequestResponse);
 
 // routes
-app.put('/players', async (req, res) => {
-  let nickname = req.body?.nickname;
-  if (!nickname) {
-    res.status(400).json({ error: 'Please provide a nickname' });
-  }
-  nickname = nickname.trim();
-  const maxNicknameLength = 30;
-  if (nickname === '' || nickname.length > maxNicknameLength) {
-    res.status(400).json({
-      error: `Please provide a nickname that is ${maxNicknameLength} characters or less`,
-    });
-  }
-
-  const sessionId = req.body?.currentSessionId;
-  const playerId = await redis.get(`sessionId:${sessionId}`);
-  // session invalid => gen player, session, set nickname
-  if (!playerId) {
-    const playerId = uuidv4();
-    const newSessionId = uuidv4();
-    await Promise.all([
-      redis.hset(`player:${playerId}`, { nickname }),
-      redis.set(`sessionId:${newSessionId}`, playerId),
-    ]);
-    return res.json({ newSessionId });
-  }
-
-  // session valid => update nickname of existing player
-  await redis.hset(`player:${playerId}`, { nickname });
-  res.end();
-});
+app.put('/players', createOrUpdatePlayer);
 
 app.post('/join-queue', verifySession, async (req, res) => {
   await redis.zadd('queue', [+new Date(), req.player.id]);
@@ -108,32 +80,73 @@ function delay(ms: number): Promise<void> {
     if (playersToPair >= 2) {
       const elements = await redis.zpopmin('queue', playersToPair);
       for (let i = 0; i <= elements.length - 4; i += 2) {
+        // pair 2 player ids from queue
         const playerAId = elements[i];
         const playerBId = elements[i + 2];
 
-        const gameId = uuidv4();
-        const startingPlayerId = Math.random() < 0.5 ? playerAId : playerBId;
+        // fetch nicknames
         const [playerANickname, playerBNickname] = await Promise.all([
           redis.hget(`player:${playerAId}`, 'nickname'),
           redis.hget(`player:${playerBId}`, 'nickname'),
         ]);
-        const gameData = {
+
+        // setup array of 2 paired players, pick random starting player (first element is starter)
+        // send down which player is actually them to each player
+        type Player = {
+          id: string;
+          nickname: string;
+        };
+        const playerA: Player = { id: playerAId, nickname: playerANickname };
+        const playerB: Player = { id: playerBId, nickname: playerBNickname };
+        let startingPlayerId;
+        let playersForPlayerA: Player[];
+        let playersForPlayerB: Player[];
+        if (Math.random() < 0.5) {
+          startingPlayerId = playerAId;
+          playersForPlayerA = [
+            { ...playerA, isYou: true },
+            { ...playerB, isYou: false },
+          ];
+          playersForPlayerB = [
+            { ...playerA, isYou: false },
+            { ...playerB, isYou: true },
+          ];
+        } else {
+          startingPlayerId = playerBId;
+          playersForPlayerA = [
+            { ...playerB, isYou: false },
+            { ...playerA, isYou: true },
+          ];
+          playersForPlayerB = [
+            { ...playerB, isYou: true },
+            { ...playerA, isYou: false },
+          ];
+        }
+
+        // store game data in redis
+        const gameDataForRedis = {
           playerAId,
-          playerANickname,
           playerBId,
-          playerBNickname,
           startingPlayerId,
           startTimestamp: addSeconds(new Date(), 3).toISOString(),
         };
-        await redis.hset(`game:${gameId}`, { gameData });
-        io.to(playerAId)
-          .to(playerBId)
-          .emit('matched', {
-            gameId,
-            ...gameData,
-            COUNTDOWN_TIME_S: 3,
-            TURN_TIME_S: 5,
-          });
+        const gameId = uuidv4();
+        await redis.hset(`game:${gameId}`, gameDataForRedis);
+
+        // emit game data to matched players
+        const gameDataForPlayers = {
+          gameId,
+          COUNTDOWN_TIME_S: 3,
+          TURN_TIME_S: 5,
+        };
+        io.to(playerAId).emit('matched', {
+          ...gameDataForPlayers,
+          players: playersForPlayerA,
+        });
+        io.to(playerBId).emit('matched', {
+          ...gameDataForPlayers,
+          players: playersForPlayerB,
+        });
       }
     } else {
       await delay(50);
