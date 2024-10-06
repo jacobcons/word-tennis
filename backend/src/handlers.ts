@@ -31,3 +31,22 @@ export async function createOrUpdatePlayer(req, res) {
   await redis.hset(`player:${playerId}`, { nickname });
   res.end();
 }
+
+export async function joinQueue(req, res) {
+  await redis.zadd('queue', [+new Date(), req.player.id]);
+  res.end();
+}
+
+export async function leaveQueue(req, res) {
+  await redis.zrem('queue', req.player.id);
+  res.end();
+}
+
+export async function getGame(req, res) {
+  const gameData = (await redis.hgetall(`game:${req.params.id}`)) as GameData;
+  if (!gameData) {
+    res.status(404).json({ message: `no game with id ${req.params.id} found` });
+  }
+  //gameData.startTimestamp = addSeconds(new Date(), 3).toISOString();
+  res.json(gameData);
+}

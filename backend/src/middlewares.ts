@@ -1,4 +1,5 @@
 import { logger, redis } from '@/utils.js';
+import {ErrorRequestHandler} from "express";
 
 export function logRequestResponse(req, res, next) {
   const startTime = new Date().getTime();
@@ -48,3 +49,8 @@ export async function verifySessionWs(socket, next) {
   socket.join(playerId);
   next();
 }
+
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  logger.error(err);
+  res.status(500).json({ message: 'something went wrong!' });
+};
