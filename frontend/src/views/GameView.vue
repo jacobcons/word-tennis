@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { api, gameData, socket } from '@/utils.js'
+import { api, socket } from '@/utils.js'
 import { useRoute } from 'vue-router'
+import { gameData } from '@/stores.js'
 
 const route = useRoute()
 
@@ -13,7 +14,7 @@ const turnTimeBarWidth = ref(100)
 
 // turn variables
 const currentPlayerIndex = ref(0)
-const currentPlayer = computed(() => gameData.value.players)
+const currentPlayer = computed(() => gameData.value.players[currentPlayerIndex.value])
 
 onMounted(() => {
   // start countdown game timer
@@ -55,10 +56,14 @@ const currentWord = ref('')
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
-    <div class="mx-auto flex w-96 max-w-full flex-col items-center gap-y-20 px-4">
-      <h2 class="text-2xl">John's Turn (you)</h2>
-      <span class="text-8xl">{{ countdownTimeLeft > 0 ? countdownTimeLeft : currentWord }}</span>
-      <form @submit.prevent="sendWord" class="w-full">
+    <div class="mx-auto flex flex-col items-center gap-y-20 px-4">
+      <h2 class="text-2xl">
+        {{ currentPlayer.nickname }}'s turn ({{ currentPlayer.isYou ? 'you' : 'them' }})
+      </h2>
+      <span class="text-2xl sm:text-6xl">{{
+        countdownTimeLeft > 0 ? countdownTimeLeft : currentWord
+      }}</span>
+      <form @submit.prevent="sendWord" class="w-full max-w-md">
         <div class="mb-1 flex justify-between">
           <span class="text-base font-medium text-blue-700 dark:text-white">Timer</span>
           <span class="text-sm font-medium text-blue-700 dark:text-white">{{
@@ -77,6 +82,7 @@ const currentWord = ref('')
           placeholder="Type Word..."
           class="text-small block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
           required
+          :disabled="!currentPlayer.isYou"
         />
       </form>
     </div>

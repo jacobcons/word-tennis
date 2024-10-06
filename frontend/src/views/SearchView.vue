@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { api, socket, gameData } from '@/utils.js'
+import { api, socket } from '@/utils.js'
 import router from '@/router/index.js'
+import { gameData } from '@/stores.js'
 
 // join queue
 ;(async () => {

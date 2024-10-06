@@ -21,6 +21,7 @@ async function start() {
     addBearerTokenToAxios(newSessionId)
     connectToWsServer(newSessionId)
   }
+
   localStorage.setItem('nickname', nickname.value)
   await router.push({ path: '/search' })
 }

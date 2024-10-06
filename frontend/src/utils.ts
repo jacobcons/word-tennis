@@ -18,32 +18,6 @@ export function connectToWsServer(sessionId: string) {
   })
 }
 
-type GameData = {
-  gameId: string
-  playerAId: string
-  playerANickname: string
-  playerBId: string
-  playerBNickname: string
-  startingPlayerId: string
-  startTimestamp: string
-  COUNTDOWN_TIME_S: number
-  TURN_TIME_S: number
-}
-
-export const gameData: { value: GameData } = {
-  value: {
-    gameId: '',
-    playerAId: '',
-    playerANickname: '',
-    playerBId: '',
-    playerBNickname: '',
-    startingPlayerId: '',
-    startTimestamp: '',
-    COUNTDOWN_TIME_S: NaN,
-    TURN_TIME_S: NaN
-  }
-}
-
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }

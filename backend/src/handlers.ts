@@ -1,16 +1,16 @@
-import { redis } from '@/utils.js'
-import { v4 as uuidv4 } from 'uuid'
+import { redis } from '@/utils.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
   if (!nickname) {
-    res.status(400).json({ error: 'Please provide a nickname' });
+    return res.status(400).json({ error: 'Please provide a nickname' });
   }
   nickname = nickname.trim();
-  const maxNicknameLength = 30;
-  if (nickname === '' || nickname.length > maxNicknameLength) {
-    res.status(400).json({
-      error: `Please provide a nickname that is ${maxNicknameLength} characters or less`,
+  const MAX_NICKNAME_LENGTH = 40;
+  if (nickname === '' || nickname.length > MAX_NICKNAME_LENGTH) {
+    return res.status(400).json({
+      error: `Please provide a nickname that is ${MAX_NICKNAME_LENGTH} characters or less`,
     });
   }
 
