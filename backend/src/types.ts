@@ -1,8 +1,12 @@
-export type GameData = {
+export type Game = {
   playerAId: string;
-  playerANickname: string;
   playerBId: string;
-  playerBNickname: string;
   startingPlayerId: string;
   startTimestamp: string;
+};
+
+export type Turn = {
+  playerId: string;
+  word: string;
+  submitTimestamp: string;
 };

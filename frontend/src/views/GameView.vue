@@ -47,8 +47,15 @@ onMounted(() => {
 })
 
 const word = ref('')
-function sendWord() {
-  console.log(word.value)
+async function sendWord() {
+  const currentSessionId = localStorage.getItem('sessionId')
+
+  const { newSessionId } = (
+    await api.post('turns', {
+      gameId: gameData.value.gameId,
+      word
+    })
+  ).data
 }
 
 const currentWord = ref('')

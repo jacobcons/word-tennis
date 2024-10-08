@@ -32,9 +32,11 @@
     "express-async-errors": "^3.1.1",
     "ioredis": "^5.4.1",
     "morgan": "^1.10.0",
+    "openai": "^4.67.2",
     "pino": "^9.4.0",
     "prettier": "^3.3.3",
     "socket.io": "^4.7.5",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
   }
 }

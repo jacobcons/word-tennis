@@ -1,8 +1,12 @@
 import pino from 'pino';
 import Redis from 'ioredis';
-import {addSeconds} from "date-fns";
-import {v4 as uuidv4} from "uuid";
-import {io} from "@/index.js";
+import { addSeconds } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
+import { io } from '@/index.js';
+import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
+import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
+import { ZodType } from 'zod';
 
 export const logger = pino({
   level: process.env.NODE_ENV === 'dev' ? 'trace' : 'info',
@@ -17,7 +21,6 @@ export const logger = pino({
 
 export const redis = new Redis(`${process.env.REDIS_URL}`);
 
-// queue system that pairs players
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -86,8 +89,8 @@ export async function pairPlayersInQueue() {
         // emit game data to matched players
         const gameDataForPlayers = {
           gameId,
-          COUNTDOWN_TIME_S: 3,
-          TURN_TIME_S: 5,
+          COUNTDOWN_TIME_S,
+          TURN_TIME_S,
         };
         io.to(playerAId).emit('matched', {
           ...gameDataForPlayers,
@@ -102,4 +105,26 @@ export async function pairPlayersInQueue() {
       await delay(50);
     }
   }
+}
+
+export async function chatCompletion(content: string, responseFormat: ZodType) {
+  const openai = new OpenAI();
+
+  const completion = await openai.chat.completions.parse({
+    model: 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are a bot that judges a game where users type words back and forth between each other. The current word must be related to the previous one.',
+      },
+      {
+        role: 'user',
+        content,
+      },
+    ],
+    response_format: zodResponseFormat(responseFormat, 'question'),
+  });
+
+  return completion.choices[0].message.parsed;
 }
