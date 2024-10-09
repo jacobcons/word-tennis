@@ -1,9 +1,10 @@
 import { chatCompletion, redis } from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Game, Turn } from '@/types.js';
-import { differenceInSeconds } from 'date-fns';
-import { TURN_TIME_S } from '@/constants.js';
+import { addSeconds, differenceInSeconds } from 'date-fns';
+import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
 import { z } from 'zod';
+import { io } from '@/index.js';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
@@ -38,7 +39,78 @@ export async function createOrUpdatePlayer(req, res) {
 
 export async function joinQueue(req, res) {
   await redis.zadd('queue', [+new Date(), req.player.id]);
-  res.end();
+
+  const playersInQueue = await redis.zcount('queue', -Infinity, Infinity);
+  if (playersInQueue >= 2) {
+    const [playerAId, , playerBId] = await redis.zpopmin('queue', 2);
+
+    // fetch nicknames
+    const [playerANickname, playerBNickname] = await Promise.all([
+      redis.hget(`player:${playerAId}`, 'nickname'),
+      redis.hget(`player:${playerBId}`, 'nickname'),
+    ]);
+
+    // setup array of 2 paired players, pick random starting player (first element is starter)
+    // send down which player is actually them to each player
+    type Player = {
+      id: string;
+      nickname: string;
+      isYou?: boolean;
+    };
+    const playerA: Player = { id: playerAId, nickname: playerANickname };
+    const playerB: Player = { id: playerBId, nickname: playerBNickname };
+    let startingPlayerId;
+    let playersForPlayerA: Player[];
+    let playersForPlayerB: Player[];
+    if (Math.random() < 0.5) {
+      startingPlayerId = playerAId;
+      playersForPlayerA = [
+        { ...playerA, isYou: true },
+        { ...playerB, isYou: false },
+      ];
+      playersForPlayerB = [
+        { ...playerA, isYou: false },
+        { ...playerB, isYou: true },
+      ];
+    } else {
+      startingPlayerId = playerBId;
+      playersForPlayerA = [
+        { ...playerB, isYou: false },
+        { ...playerA, isYou: true },
+      ];
+      playersForPlayerB = [
+        { ...playerB, isYou: true },
+        { ...playerA, isYou: false },
+      ];
+    }
+
+    // store game data in redis
+    const gameDataForRedis = {
+      playerAId,
+      playerBId,
+      startingPlayerId,
+      startTimestamp: addSeconds(new Date(), 3).toISOString(),
+    };
+    const gameId = uuidv4();
+    await redis.hset(`game:${gameId}`, gameDataForRedis);
+
+    // emit game data to matched players
+    const gameDataForPlayers = {
+      gameId,
+      COUNTDOWN_TIME_S,
+      TURN_TIME_S,
+    };
+    io.to(playerAId).emit('matched', {
+      ...gameDataForPlayers,
+      players: playersForPlayerA,
+    });
+    io.to(playerBId).emit('matched', {
+      ...gameDataForPlayers,
+      players: playersForPlayerB,
+    });
+
+    res.end();
+  }
 }
 
 export async function leaveQueue(req, res) {

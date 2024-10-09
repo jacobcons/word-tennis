@@ -1,20 +1,16 @@
-import express, { ErrorRequestHandler } from 'express';
+import express from 'express';
 import 'express-async-errors';
 import cors from 'cors';
-import { v4 as uuidv4 } from 'uuid';
 import {
   errorHandler,
   logRequestResponse,
   verifySession,
   verifySessionWs,
 } from '@/middlewares.js';
-import { delay, logger, pairPlayersInQueue, redis } from '@/utils.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { addSeconds } from 'date-fns';
 import {
   createOrUpdatePlayer,
-  getGame,
   haveTurn,
   joinQueue,
   leaveQueue,
@@ -47,11 +43,6 @@ app.post('/turns', verifySession, haveTurn);
 
 // error handler
 app.use(errorHandler);
-
-// pair players in queue system
-(async () => {
-  await pairPlayersInQueue();
-})();
 
 // start the HTTP server
 const PORT = 3000;
