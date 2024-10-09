@@ -123,13 +123,13 @@ export async function haveTurn(req, res) {
   const playerId = req.player.id;
   const gameData = (await redis.hgetall(`game:${gameId}`)) as Game;
 
-  if (!gameData) {
+  if (!Object.keys(gameData).length) {
     return res.status(404).json({ message: `no game with given id found` });
   }
 
   const gameTurnsKey = `game:${gameId}:turns`;
   const turns = (await redis.lrange(gameTurnsKey, 0, -1)) as Turn[];
-  if (!turns) {
+  if (!turns.length) {
     if (gameData.startingPlayerId !== playerId) {
       return res
         .status(409)
