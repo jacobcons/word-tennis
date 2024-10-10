@@ -136,14 +136,14 @@ export async function haveTurn(req, res) {
         .json({ message: 'first word must be submitted by starting player' });
     }
 
-    if (
-      differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
-      TURN_TIME_S
-    ) {
-      return res.status(409).json({
-        message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
-      });
-    }
+    // if (
+    //   differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
+    //   TURN_TIME_S
+    // ) {
+    //   return res.status(409).json({
+    //     message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
+    //   });
+    // }
 
     const turnId = uuidv4();
     const turnKey = `turn:${turnId}`;

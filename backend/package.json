@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "tsx watch --inspect-brk ./src/index.ts",
+    "dev": "tsx watch --inspect ./src/index.ts",
     "lint": "npx eslint . --ext .ts",
     "type-check": "tsc --noEmit",
     "build": "tsc"

@@ -24,7 +24,7 @@ export function delay(ms: number): Promise<void> {
 export async function chatCompletion(content: string, responseFormat: ZodType) {
   const openai = new OpenAI();
 
-  const completion = await openai.chat.completions.parse({
+  const completion = await openai.beta.chat.completions.parse({
     model: 'gpt-4o-mini',
     messages: [
       {
