@@ -21,10 +21,9 @@ export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function chatCompletion(content: string, responseFormat: ZodType) {
-  const openai = new OpenAI();
-
-  const completion = await openai.beta.chat.completions.parse({
+const openai = new OpenAI();
+export async function chatCompletion(content: string) {
+  const completion = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
@@ -37,8 +36,7 @@ export async function chatCompletion(content: string, responseFormat: ZodType) {
         content,
       },
     ],
-    response_format: zodResponseFormat(responseFormat, 'question'),
   });
 
-  return completion.choices[0].message.parsed;
+  return completion.choices[0].message.content;
 }

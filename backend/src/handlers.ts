@@ -5,6 +5,8 @@ import { addSeconds, differenceInSeconds } from 'date-fns';
 import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
 import { z } from 'zod';
 import { io } from '@/index.js';
+import dictionary from 'dictionary-en';
+import nspell from 'nspell';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
@@ -127,9 +129,10 @@ export async function haveTurn(req, res) {
     return res.status(404).json({ message: `no game with given id found` });
   }
 
+  // todo: emit to users that a word is being processed
   const gameTurnsKey = `game:${gameId}:turns`;
   const turns = (await redis.lrange(gameTurnsKey, 0, -1)) as Turn[];
-  if (!turns.length) {
+  if (true) {
     if (gameData.startingPlayerId !== playerId) {
       return res
         .status(409)
@@ -145,22 +148,32 @@ export async function haveTurn(req, res) {
     //   });
     // }
 
-    const turnId = uuidv4();
-    const turnKey = `turn:${turnId}`;
-    await redis.hset(turnKey, { playerId, word });
-    await redis.lpush(gameTurnsKey, turnKey);
-
-    const isValidWord = await chatCompletion(
-      `${word} is the first word. Is it a valid word? Give your answer as a boolean`,
-      z.boolean(),
+    const isValidWordResponse = await chatCompletion(
+      `is ${word} a valid correctly spelt word? return a single character n or y to answer. however, if a spell checker would correct it, return the correct word`,
     );
-    if (!isValidWord) {
+
+    const isInvalidWord = isValidWordResponse === 'n';
+    if (isInvalidWord) {
+      // todo: emit to users endgame
       return res
         .status(400)
         .json({ message: 'submitted word must be a real word' });
     }
 
-    await redis.hset(turnKey, { submitTimestamp: new Date().toISOString() });
+    const isCloseToValidWord = isValidWordResponse !== 'y';
+    const finalWord = isCloseToValidWord ? isValidWordResponse : word;
+
+    // todo: emit to users the word
+    const turnId = uuidv4();
+    const turnKey = `turn:${turnId}`;
+    await redis.hset(turnKey, {
+      playerId,
+      word: finalWord,
+      submitTimestamp: new Date().toISOString(),
+    });
+    await redis.lpush(gameTurnsKey, turnKey);
     return res.json({ message: 'word has been added' });
   }
+
+  res.end();
 }
