@@ -15,6 +15,7 @@ export const logger = pino({
       : undefined,
 });
 
+// @ts-expect-error
 export const redis = new Redis(`${process.env.REDIS_URL}`);
 
 export function delay(ms: number): Promise<void> {
@@ -27,15 +28,11 @@ export async function chatCompletion(content: string) {
     model: 'gpt-4o-mini',
     messages: [
       {
-        role: 'system',
-        content:
-          'You are a bot that judges a game where users type words back and forth between each other. The current word must be related to the previous one.',
-      },
-      {
         role: 'user',
         content,
       },
     ],
+    temperature: 0,
   });
 
   return completion.choices[0].message.content;

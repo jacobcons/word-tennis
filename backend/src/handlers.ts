@@ -3,10 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { Game, Turn } from '@/types.js';
 import { addSeconds, differenceInSeconds } from 'date-fns';
 import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
-import { z } from 'zod';
 import { io } from '@/index.js';
-import dictionary from 'dictionary-en';
+import { readFileSync } from 'fs';
+import natural from 'natural';
 import nspell from 'nspell';
+import dictionary from 'dictionary-en';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
@@ -124,46 +125,48 @@ export async function haveTurn(req, res) {
   const { gameId, word } = req.body;
   const playerId = req.player.id;
   const gameData = (await redis.hgetall(`game:${gameId}`)) as Game;
+  const { playerAId, playerBId } = gameData;
 
   if (!Object.keys(gameData).length) {
     return res.status(404).json({ message: `no game with given id found` });
   }
 
-  // todo: emit to users that a word is being processed
   const gameTurnsKey = `game:${gameId}:turns`;
   const turns = (await redis.lrange(gameTurnsKey, 0, -1)) as Turn[];
-  if (true) {
+  if (!turns) {
     if (gameData.startingPlayerId !== playerId) {
       return res
         .status(409)
         .json({ message: 'first word must be submitted by starting player' });
     }
 
-    // if (
-    //   differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
-    //   TURN_TIME_S
-    // ) {
-    //   return res.status(409).json({
-    //     message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
-    //   });
-    // }
+    if (
+      differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
+      TURN_TIME_S
+    ) {
+      return res.status(409).json({
+        message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
+      });
+    }
 
+    io.to([playerAId, playerBId]).emit('processing-word');
     const isValidWordResponse = await chatCompletion(
-      `is ${word} a valid correctly spelt word? return a single character n or y to answer. however, if a spell checker would correct it, return the correct word`,
+      `You are given the word ${word}. You must output y if its spelt correctly, the corrected word if a spell checker would correct it (e.g. rasberry->raspberry), or n if it's spelt incorrectly. The output must not exceed a single word.`,
     );
 
-    const isInvalidWord = isValidWordResponse === 'n';
-    if (isInvalidWord) {
+    const isNotValidWord = isValidWordResponse === 'n';
+    if (isNotValidWord) {
       // todo: emit to users endgame
       return res
         .status(400)
         .json({ message: 'submitted word must be a real word' });
     }
 
-    const isCloseToValidWord = isValidWordResponse !== 'y';
-    const finalWord = isCloseToValidWord ? isValidWordResponse : word;
+    // if valid word => keep word the same, otherwise use corrected word
+    const finalWord = isValidWordResponse === 'y' ? word : isValidWordResponse;
+    io.to([playerAId, playerBId]).emit('valid-word', finalWord);
 
-    // todo: emit to users the word
+    // push turn to list of turns in db
     const turnId = uuidv4();
     const turnKey = `turn:${turnId}`;
     await redis.hset(turnKey, {
@@ -172,7 +175,8 @@ export async function haveTurn(req, res) {
       submitTimestamp: new Date().toISOString(),
     });
     await redis.lpush(gameTurnsKey, turnKey);
-    return res.json({ message: 'word has been added' });
+
+    return res.json({ message: `${finalWord} has been added to turn` });
   }
 
   res.end();
