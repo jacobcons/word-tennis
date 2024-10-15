@@ -5,6 +5,7 @@ import router from '@/router/index.js'
 import { gameData } from '@/stores.js'
 
 // join queue
+import { useAnimatedTripleDotMessage } from '@/composables.js'
 ;(async () => {
   await api.post('join-queue')
 })()
@@ -18,24 +19,16 @@ socket.on('matched', async (serverGameData) => {
 // display animated searching for player message
 // close window => leave queue
 const nickname = localStorage.getItem('nickname')
-const searchingMessage = ref('Searching for players')
-let searchingMessageIntervalId: number
+const { animatedTripleDotMessage: searchingMessage } =
+  useAnimatedTripleDotMessage('Searching for players')
 onMounted(async () => {
-  searchingMessageIntervalId = setInterval(() => {
-    const length = searchingMessage.value.length
-    const areLastThreeCharactersDots = searchingMessage.value.slice(length - 3, length) === '...'
-    searchingMessage.value = areLastThreeCharactersDots
-      ? searchingMessage.value.slice(0, length - 3)
-      : `${searchingMessage.value}.`
-  }, 250)
   window.addEventListener('beforeunload', leaveQueue)
 })
 
 // teardown
 onBeforeUnmount(async () => {
-  if (searchingMessageIntervalId) clearInterval(searchingMessageIntervalId)
   await leaveQueue()
-  socket.removeAllListeners()
+  socket.removeListener('matched')
   window.removeEventListener('beforeunload', leaveQueue)
 })
 
@@ -47,7 +40,7 @@ async function leaveQueue() {
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
     <div class="mx-auto flex max-w-lg flex-col items-center gap-y-6 px-4">
-      <span class="break-all text-2xl">Hey {{ nickname }}!</span>
+      <span class="break-all text-2xl text-gray-800">Hey {{ nickname }}!</span>
       <span class="text-xl">{{ searchingMessage }}</span>
       <div role="status">
         <svg

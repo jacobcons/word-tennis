@@ -4,10 +4,6 @@ import { Game, Turn } from '@/types.js';
 import { addSeconds, differenceInSeconds } from 'date-fns';
 import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
 import { io } from '@/index.js';
-import { readFileSync } from 'fs';
-import natural from 'natural';
-import nspell from 'nspell';
-import dictionary from 'dictionary-en';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
@@ -111,9 +107,9 @@ export async function joinQueue(req, res) {
       ...gameDataForPlayers,
       players: playersForPlayerB,
     });
-
-    res.end();
   }
+
+  res.end();
 }
 
 export async function leaveQueue(req, res) {
@@ -133,23 +129,23 @@ export async function haveTurn(req, res) {
 
   const gameTurnsKey = `game:${gameId}:turns`;
   const turns = (await redis.lrange(gameTurnsKey, 0, -1)) as Turn[];
-  if (!turns) {
+  if (1 || !turns.length) {
     if (gameData.startingPlayerId !== playerId) {
       return res
         .status(409)
         .json({ message: 'first word must be submitted by starting player' });
     }
 
-    if (
-      differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
-      TURN_TIME_S
-    ) {
-      return res.status(409).json({
-        message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
-      });
-    }
+    // if (
+    //   differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
+    //   TURN_TIME_S
+    // ) {
+    //   return res.status(409).json({
+    //     message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
+    //   });
+    // }
 
-    io.to([playerAId, playerBId]).emit('processing-word');
+    io.to(playerAId).to(playerBId).emit('processing-word');
     const isValidWordResponse = await chatCompletion(
       `You are given the word ${word}. You must output y if its spelt correctly, the corrected word if a spell checker would correct it (e.g. rasberry->raspberry), or n if it's spelt incorrectly. The output must not exceed a single word.`,
     );
@@ -164,17 +160,19 @@ export async function haveTurn(req, res) {
 
     // if valid word => keep word the same, otherwise use corrected word
     const finalWord = isValidWordResponse === 'y' ? word : isValidWordResponse;
-    io.to([playerAId, playerBId]).emit('valid-word', finalWord);
 
     // push turn to list of turns in db
     const turnId = uuidv4();
     const turnKey = `turn:${turnId}`;
-    await redis.hset(turnKey, {
-      playerId,
-      word: finalWord,
-      submitTimestamp: new Date().toISOString(),
-    });
-    await redis.lpush(gameTurnsKey, turnKey);
+    await Promise.all([
+      redis.hset(turnKey, {
+        playerId,
+        word: finalWord,
+        submitTimestamp: new Date().toISOString(),
+      }),
+      redis.lpush(gameTurnsKey, turnKey),
+    ]);
+    io.to([playerAId, playerBId]).emit('valid-word', finalWord);
 
     return res.json({ message: `${finalWord} has been added to turn` });
   }

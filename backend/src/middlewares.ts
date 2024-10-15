@@ -1,5 +1,5 @@
 import { logger, redis } from '@/utils.js';
-import {ErrorRequestHandler} from "express";
+import { ErrorRequestHandler } from 'express';
 
 export function logRequestResponse(req, res, next) {
   const startTime = new Date().getTime();
@@ -10,18 +10,29 @@ export function logRequestResponse(req, res, next) {
     `Request ${req.method} ${req.url}`,
   );
 
-  const json = res.json;
+  // Hook into res.json to capture the body
+  const originalJson = res.json;
+  let responseBody;
   res.json = (body) => {
+    responseBody = body;
+    return originalJson.call(res, body);
+  };
+
+  // Listen for when the response is finished
+  res.on('finish', () => {
     const responseTime = new Date().getTime() - startTime;
+
+    const objToLog = {
+      body: undefined,
+    };
+    if (responseBody) {
+      objToLog.body = responseBody;
+    }
     logger.debug(
-      {
-        body,
-      },
+      objToLog,
       `Response ${req.method} ${req.url} ${res.statusCode} ${responseTime}ms`,
     );
-    res.json = json;
-    return res.json(body);
-  };
+  });
   next();
 }
 
