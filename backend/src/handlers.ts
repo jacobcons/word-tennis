@@ -29,7 +29,7 @@ export async function createOrUpdatePlayer(req, res) {
     return res.status(400).json({ error: 'Please provide a nickname' });
   }
   nickname = nickname.trim();
-  const MAX_NICKNAME_LENGTH = 40;
+  const MAX_NICKNAME_LENGTH = 30;
   if (nickname === '' || nickname.length > MAX_NICKNAME_LENGTH) {
     return res.status(400).json({
       error: `Please provide a nickname that is ${MAX_NICKNAME_LENGTH} characters or less`,

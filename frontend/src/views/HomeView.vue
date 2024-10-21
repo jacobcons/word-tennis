@@ -27,7 +27,11 @@ async function start() {
 }
 
 function setRandomNickname() {
-  nickname.value = uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] })
+  const MAX_NICKNAME_LENGTH = 30
+  nickname.value = uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] }).slice(
+    0,
+    MAX_NICKNAME_LENGTH
+  )
 }
 </script>
 
