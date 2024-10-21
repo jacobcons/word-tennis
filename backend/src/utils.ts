@@ -50,7 +50,6 @@ export function ensureWordFromCurrentPlayer(
 }
 
 export function ensureWordSubmittedDuringTurn(lastTurnUnixTime: number) {
-  return true;
   const timeSinceLastTurnS = (Date.now() - lastTurnUnixTime) / 1000;
   if (timeSinceLastTurnS > TURN_TIME_S || timeSinceLastTurnS < 0) {
     throw new HttpError(409, 'word must be submitted during your turn');
@@ -95,4 +94,29 @@ export function emitValidWord(
   word: string,
 ) {
   io.to(playerAId).to(playerBId).emit('valid-word', word);
+}
+
+export function setTurnTimer(
+  turnTimers: Map<string, number>,
+  gameId: string,
+  timeS: number,
+  playerAId: string,
+  playerBId: string,
+) {
+  turnTimers.set(
+    gameId,
+    setTimeout(() => {
+      emitEndGame(playerAId, playerBId);
+    }, timeS * 1000),
+  );
+}
+
+export function clearTurnTimer(
+  turnTimers: Map<string, number>,
+  gameId: string,
+) {
+  const timerIntervalId = turnTimers.get(gameId);
+  if (timerIntervalId) {
+    clearInterval(timerIntervalId);
+  }
 }

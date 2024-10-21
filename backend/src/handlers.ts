@@ -1,5 +1,7 @@
 import {
   chatCompletion,
+  clearTurnTimer,
+  createGameTimer,
   emitEndGame,
   emitProcessingWord,
   emitValidWord,
@@ -10,6 +12,7 @@ import {
   getFinalWord,
   redis,
   saveTurn,
+  setTurnTimer,
 } from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Game, HttpError, Player, Turn } from '@/types/types.js';
@@ -50,6 +53,8 @@ export async function createOrUpdatePlayer(req, res) {
   await redis.hset(`player:${playerId}`, { nickname });
   res.end();
 }
+
+const turnTimers: Map<string, number> = new Map();
 
 export async function joinQueue(req, res) {
   await redis.zadd('queue', [+new Date(), req.player.id]);
@@ -117,6 +122,13 @@ export async function joinQueue(req, res) {
       ...gameDataForPlayers,
       players: playersForPlayerB,
     });
+    setTurnTimer(
+      turnTimers,
+      gameId,
+      COUNTDOWN_TIME_S + TURN_TIME_S,
+      playerAId,
+      playerBId,
+    );
   }
 
   res.end();
@@ -148,6 +160,8 @@ export async function haveTurn(req, res) {
 
     ensureWordSubmittedDuringTurn(startUnixTime);
 
+    clearTurnTimer(turnTimers, gameId);
+
     emitProcessingWord(playerAId, playerBId);
 
     // use ai to determine if word is valid,  output is either n=>invalid, y=>valid, or corrected spelling
@@ -171,6 +185,8 @@ export async function haveTurn(req, res) {
 
     emitValidWord(playerAId, playerBId, finalWord);
 
+    setTurnTimer(turnTimers, gameId, TURN_TIME_S, playerAId, playerBId);
+
     return res.json({ message: `${finalWord} has been added to turn` });
   }
 
@@ -189,6 +205,8 @@ export async function haveTurn(req, res) {
   ensureWordFromCurrentPlayer(currentPlayerId, playerId);
 
   ensureWordSubmittedDuringTurn(lastTurn.submitUnixTime);
+
+  clearTurnTimer(turnTimers, gameId);
 
   emitProcessingWord(playerAId, playerBId);
 
@@ -250,7 +268,10 @@ export async function haveTurn(req, res) {
     },
     gameTurnsKey,
   );
+
   emitValidWord(playerAId, playerBId, finalWord);
+
+  setTurnTimer(turnTimers, gameId, TURN_TIME_S, playerAId, playerBId);
 
   return res.json({ message: `${finalWord} has been added to turn` });
 }
