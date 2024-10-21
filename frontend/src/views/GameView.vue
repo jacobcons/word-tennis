@@ -54,11 +54,19 @@ const currentPlayerIndex = ref(0)
 const currentPlayer = computed(() => gameData.value.players[currentPlayerIndex.value])
 const currentWord = ref('')
 const wordToSend = ref('')
+const enterSingleWordError = ref(false)
 const isProcessingWord = ref(false)
 const { animatedTripleDotMessage: evaluatingMessage } =
   useAnimatedTripleDotMessage('Evaluating word')
 
 async function sendWord() {
+  const trimmedWordToSend = wordToSend.value.trim()
+  if (!trimmedWordToSend.length || trimmedWordToSend.split(' ').length !== 1) {
+    enterSingleWordError.value = true
+    return
+  }
+  enterSingleWordError.value = false
+
   isProcessingWord.value = true
   await api.post('turns', {
     gameId: gameData.value.gameId,
@@ -158,6 +166,9 @@ onUnmounted(() => {
           required
           :disabled="countdownTimeLeft > 0 || !currentPlayer.isYou || isProcessingWord"
         />
+        <p class="mt-2 text-sm text-red-600 dark:text-red-500" v-if="enterSingleWordError">
+          Please supply a single word
+        </p>
       </form>
     </div>
   </div>

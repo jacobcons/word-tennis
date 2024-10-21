@@ -140,7 +140,12 @@ export async function leaveQueue(req, res) {
 }
 
 export async function haveTurn(req, res) {
-  const { gameId, word } = req.body;
+  let { gameId, word } = req.body;
+  // lower case and trim word
+  word = word.toLowerCase().trim();
+  if (!word.length || word.split(' ').length !== 1) {
+    return res.status(400).json({ message: 'please supply a single word' });
+  }
   const playerId = req.player.id;
   const gameData = (await redis.hgetall(`game:${gameId}`)) as Game;
   gameData.startUnixTime = Number(gameData.startUnixTime);
@@ -191,11 +196,9 @@ export async function haveTurn(req, res) {
   }
 
   // if not the first turn
-  console.time();
   const turns = await Promise.all(
     turnIds.map((id) => redis.hgetall(id) as Turn),
   );
-  console.timeEnd();
   const lastTurn = turns[0];
   const currentPlayerId =
     lastTurn.playerId === gameData.playerAId
