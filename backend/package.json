@@ -9,8 +9,8 @@
     "dev": "tsx watch --inspect ./src/index.ts",
     "lint": "npx eslint . --ext .ts",
     "type-check": "tsc --noEmit",
-    "seed": "tsx scripts/seed.ts",
-    "temp": "tsx scripts/temp.ts"
+    "seed": "tsx src/scripts/seed.ts",
+    "temp": "node src/scripts/temp.js"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +40,7 @@
     "express-async-errors": "^3.1.1",
     "fast-levenshtein": "^3.0.0",
     "ioredis": "^5.4.1",
+    "lancaster-stemmer": "^2.1.0",
     "morgan": "^1.10.0",
     "natural": "^8.0.1",
     "openai": "^4.67.2",
@@ -47,6 +48,7 @@
     "prettier": "^3.3.3",
     "socket.io": "^4.7.5",
     "string-similarity": "^4.0.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "wink-lemmatizer": "^3.0.4"
   }
 }

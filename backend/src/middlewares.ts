@@ -1,5 +1,6 @@
 import { logger, redis } from '@/utils.js';
 import { ErrorRequestHandler } from 'express';
+import { HttpError } from '@/types/types.js';
 
 export function logRequestResponse(req, res, next) {
   const startTime = new Date().getTime();
@@ -63,5 +64,8 @@ export async function verifySessionWs(socket, next) {
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err);
-  res.status(500).json({ message: 'something went wrong!' });
+  if (err instanceof HttpError) {
+    return res.status(err.status).json({ message: err.message });
+  }
+  return res.status(500).json({ message: 'something went wrong!' });
 };

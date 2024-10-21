@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { api, socket } from '@/utils.js'
 import { useRoute } from 'vue-router'
 import { gameData } from '@/stores.js'
 import { useAnimatedTripleDotMessage } from '@/composables.js'
+import router from '@/router/index.js'
 
 const route = useRoute()
 
@@ -48,12 +49,15 @@ function startTurnTimer() {
   return { turnTimeIntervalId, turnTimeBarIntervalId }
 }
 
-/* TURN */
+/* TURN MANAGEMENT */
 const currentPlayerIndex = ref(0)
 const currentPlayer = computed(() => gameData.value.players[currentPlayerIndex.value])
 const currentWord = ref('')
-
 const wordToSend = ref('')
+const isProcessingWord = ref(false)
+const { animatedTripleDotMessage: evaluatingMessage } =
+  useAnimatedTripleDotMessage('Evaluating word')
+
 async function sendWord() {
   isProcessingWord.value = true
   await api.post('turns', {
@@ -63,10 +67,7 @@ async function sendWord() {
   wordToSend.value = ''
 }
 
-const { animatedTripleDotMessage: evaluatingMessage } =
-  useAnimatedTripleDotMessage('Evaluating word')
-
-const isProcessingWord = ref(false)
+// while word is being processed by ai => pause everything and include loading spinner
 socket.on('processing-word', () => {
   isProcessingWord.value = true
 
@@ -74,15 +75,27 @@ socket.on('processing-word', () => {
   clearInterval(turnTimeIntervalId)
   clearInterval(turnTimeBarIntervalId)
 })
+
+// word comes through as valid => update player, current word, reset turn timers
 socket.on('valid-word', (word: string) => {
   isProcessingWord.value = false
   currentPlayerIndex.value = currentPlayerIndex.value === 0 ? 1 : 0
   currentWord.value = word
 
-  // reset turn timer
   turnTimeLeft.value = TURN_TIME_S
   turnTimeBarWidth.value = 100
   startTurnTimer()
+})
+
+// game must end => go to results s
+socket.on('end-game', async () => {
+  await router.push({ path: `/game/${gameData.value.gameId}/results` })
+})
+
+onUnmounted(() => {
+  socket.removeListener('processing-word')
+  socket.removeListener('valid-word')
+  socket.removeListener('end-game')
 })
 </script>
 
@@ -115,9 +128,7 @@ socket.on('valid-word', (word: string) => {
         </div>
       </template>
       <template v-else>
-        <span class="text-2xl sm:text-6xl">{{
-          countdownTimeLeft > 0 ? countdownTimeLeft : currentWord
-        }}</span>
+        <span class="text-6xl">{{ countdownTimeLeft > 0 ? countdownTimeLeft : currentWord }}</span>
       </template>
       <form @submit.prevent="sendWord" class="w-full max-w-md">
         <div class="mb-1 flex justify-between">

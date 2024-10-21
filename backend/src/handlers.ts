@@ -1,12 +1,27 @@
-import { chatCompletion, redis } from '@/utils.js';
+import {
+  chatCompletion,
+  emitEndGame,
+  emitProcessingWord,
+  emitValidWord,
+  ensureWordFromCurrentPlayer,
+  ensureWordIsValid,
+  ensureWordSubmittedDuringTurn,
+  generateIsValidWordPrompt,
+  getFinalWord,
+  redis,
+  saveTurn,
+} from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
-import { Game, Turn } from '@/types.js';
-import { addSeconds, differenceInSeconds } from 'date-fns';
+import { Game, HttpError, Player, Turn } from '@/types/types.js';
 import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
 import { io } from '@/index.js';
+import lemmatize from 'wink-lemmatizer';
+import { lancasterStemmer } from 'lancaster-stemmer';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
+
+  // validate nickname
   if (!nickname) {
     return res.status(400).json({ error: 'Please provide a nickname' });
   }
@@ -51,11 +66,6 @@ export async function joinQueue(req, res) {
 
     // setup array of 2 paired players, pick random starting player (first element is starter)
     // send down which player is actually them to each player
-    type Player = {
-      id: string;
-      nickname: string;
-      isYou?: boolean;
-    };
     const playerA: Player = { id: playerAId, nickname: playerANickname };
     const playerB: Player = { id: playerBId, nickname: playerBNickname };
     let startingPlayerId;
@@ -88,7 +98,7 @@ export async function joinQueue(req, res) {
       playerAId,
       playerBId,
       startingPlayerId,
-      startTimestamp: addSeconds(new Date(), 3).toISOString(),
+      startUnixTime: Date.now() + COUNTDOWN_TIME_S * 1000,
     };
     const gameId = uuidv4();
     await redis.hset(`game:${gameId}`, gameDataForRedis);
@@ -121,61 +131,130 @@ export async function haveTurn(req, res) {
   const { gameId, word } = req.body;
   const playerId = req.player.id;
   const gameData = (await redis.hgetall(`game:${gameId}`)) as Game;
-  const { playerAId, playerBId } = gameData;
+  gameData.startUnixTime = Number(gameData.startUnixTime);
+  const { playerAId, playerBId, startingPlayerId, startUnixTime } = gameData;
 
+  // ensure game exists
   if (!Object.keys(gameData).length) {
     return res.status(404).json({ message: `no game with given id found` });
   }
 
   const gameTurnsKey = `game:${gameId}:turns`;
-  const turns = (await redis.lrange(gameTurnsKey, 0, -1)) as Turn[];
-  if (1 || !turns.length) {
-    if (gameData.startingPlayerId !== playerId) {
-      return res
-        .status(409)
-        .json({ message: 'first word must be submitted by starting player' });
-    }
+  const turnIds = (await redis.lrange(gameTurnsKey, 0, -1)) as string[];
 
-    // if (
-    //   differenceInSeconds(new Date(), new Date(gameData.startTimestamp)) >
-    //   TURN_TIME_S
-    // ) {
-    //   return res.status(409).json({
-    //     message: `first word must be submitted within ${TURN_TIME_S} seconds of the game starting`,
-    //   });
-    // }
+  // if first turn
+  if (!turnIds.length) {
+    ensureWordFromCurrentPlayer(startingPlayerId, playerId);
 
-    io.to(playerAId).to(playerBId).emit('processing-word');
+    ensureWordSubmittedDuringTurn(startUnixTime);
+
+    emitProcessingWord(playerAId, playerBId);
+
+    // use ai to determine if word is valid,  output is either n=>invalid, y=>valid, or corrected spelling
     const isValidWordResponse = await chatCompletion(
-      `You are given the word ${word}. You must output y if its spelt correctly, the corrected word if a spell checker would correct it (e.g. rasberry->raspberry), or n if it's spelt incorrectly. The output must not exceed a single word.`,
+      generateIsValidWordPrompt(word),
     );
 
-    const isNotValidWord = isValidWordResponse === 'n';
-    if (isNotValidWord) {
-      // todo: emit to users endgame
-      return res
-        .status(400)
-        .json({ message: 'submitted word must be a real word' });
-    }
+    ensureWordIsValid(isValidWordResponse, playerAId, playerBId);
 
     // if valid word => keep word the same, otherwise use corrected word
-    const finalWord = isValidWordResponse === 'y' ? word : isValidWordResponse;
+    const finalWord = getFinalWord(isValidWordResponse, word);
 
-    // push turn to list of turns in db
-    const turnId = uuidv4();
-    const turnKey = `turn:${turnId}`;
-    await Promise.all([
-      redis.hset(turnKey, {
+    await saveTurn(
+      {
         playerId,
         word: finalWord,
-        submitTimestamp: new Date().toISOString(),
-      }),
-      redis.lpush(gameTurnsKey, turnKey),
-    ]);
-    io.to([playerAId, playerBId]).emit('valid-word', finalWord);
+        submitUnixTime: Date.now(),
+      },
+      gameTurnsKey,
+    );
+
+    emitValidWord(playerAId, playerBId, finalWord);
 
     return res.json({ message: `${finalWord} has been added to turn` });
   }
 
-  res.end();
+  // if not the first turn
+  console.time();
+  const turns = await Promise.all(
+    turnIds.map((id) => redis.hgetall(id) as Turn),
+  );
+  console.timeEnd();
+  const lastTurn = turns[0];
+  const currentPlayerId =
+    lastTurn.playerId === gameData.playerAId
+      ? gameData.playerBId
+      : gameData.playerAId;
+
+  ensureWordFromCurrentPlayer(currentPlayerId, playerId);
+
+  ensureWordSubmittedDuringTurn(lastTurn.submitUnixTime);
+
+  emitProcessingWord(playerAId, playerBId);
+
+  // check word is valid and related to previous word
+  const [isValidWordResponse, isRelatedWordResponse] = await Promise.all([
+    chatCompletion(generateIsValidWordPrompt(word)),
+    chatCompletion(
+      `You are a bot that judges a word association game where users type related words back and forth to each other. Is ${word} related to ${lastTurn.word}. output y or n`,
+    ),
+  ]);
+
+  // ensure word is valid
+  ensureWordIsValid(isValidWordResponse, playerAId, playerBId);
+
+  // ensure word is related
+  if (isRelatedWordResponse === 'n') {
+    emitEndGame(playerAId, playerBId);
+    throw new HttpError(409, `${word} is not related to ${lastTurn.word}`);
+  }
+
+  // if valid word => keep word the same, otherwise use corrected word
+  const finalWord = getFinalWord(isValidWordResponse, word);
+
+  // ensure word isn't same (including lemma/stems) as any previous words
+  const wordData = extractLemmasAndStem(finalWord);
+  const previousWords = turns.map((turn) => turn.word);
+  const previousWordsData = previousWords.map(extractLemmasAndStem);
+  function extractLemmasAndStem(word) {
+    return {
+      word,
+      lemmas: new Set([
+        lemmatize.adjective(word),
+        lemmatize.noun(word),
+        lemmatize.verb(word),
+      ]),
+      stem: lancasterStemmer(word),
+    };
+  }
+  const match = previousWordsData.find(
+    (previousWordData) =>
+      previousWordData.lemmas.intersection(wordData.lemmas).size > 0 &&
+      previousWordData.stem === wordData.stem,
+  );
+  const matchingWord = match?.word;
+  if (matchingWord) {
+    emitEndGame(playerAId, playerBId);
+    throw new HttpError(
+      409,
+      `${word} is the same/too similar to the previous word ${matchingWord}`,
+    );
+  }
+
+  // save turn to db
+  await saveTurn(
+    {
+      playerId,
+      word: finalWord,
+      submitUnixTime: Date.now(),
+    },
+    gameTurnsKey,
+  );
+  emitValidWord(playerAId, playerBId, finalWord);
+
+  return res.json({ message: `${finalWord} has been added to turn` });
+}
+
+export async function getGameResults(req, res) {
+  res.json(['hey']);
 }

@@ -11,6 +11,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import {
   createOrUpdatePlayer,
+  getGameResults,
   haveTurn,
   joinQueue,
   leaveQueue,
@@ -40,6 +41,7 @@ app.put('/players', createOrUpdatePlayer);
 app.post('/join-queue', verifySession, joinQueue);
 app.post('/leave-queue', verifySession, leaveQueue);
 app.post('/turns', verifySession, haveTurn);
+app.post('/games/:id/results', verifySession, getGameResults);
 
 // error handler
 app.use(errorHandler);
