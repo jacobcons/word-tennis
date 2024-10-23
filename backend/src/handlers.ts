@@ -9,7 +9,12 @@ import {
   ensureWordIsValid,
   ensureWordSubmittedDuringTurn,
   generateIsValidWordPrompt,
+  generateIsYouObject,
   getFinalWord,
+  getGameData,
+  getNicknames,
+  getTurnIds,
+  getTurns,
   redis,
   saveTurn,
   setTurnTimer,
@@ -26,13 +31,13 @@ export async function createOrUpdatePlayer(req, res) {
 
   // validate nickname
   if (!nickname) {
-    return res.status(400).json({ error: 'Please provide a nickname' });
+    return res.status(400).json({ message: 'Please provide a nickname' });
   }
   nickname = nickname.trim();
   const MAX_NICKNAME_LENGTH = 30;
   if (nickname === '' || nickname.length > MAX_NICKNAME_LENGTH) {
     return res.status(400).json({
-      error: `Please provide a nickname that is ${MAX_NICKNAME_LENGTH} characters or less`,
+      message: `Please provide a nickname that is ${MAX_NICKNAME_LENGTH} characters or less`,
     });
   }
 
@@ -64,10 +69,9 @@ export async function joinQueue(req, res) {
     const [playerAId, , playerBId] = await redis.zpopmin('queue', 2);
 
     // fetch nicknames
-    const [playerANickname, playerBNickname] = await Promise.all([
-      redis.hget(`player:${playerAId}`, 'nickname'),
-      redis.hget(`player:${playerBId}`, 'nickname'),
-    ]);
+    const [playerANickname, playerBNickname] = await Promise.all(
+      getNicknames(playerAId, playerBId),
+    );
 
     // setup array of 2 paired players, pick random starting player (first element is starter)
     // send down which player is actually them to each player
@@ -147,8 +151,7 @@ export async function haveTurn(req, res) {
     return res.status(400).json({ message: 'please supply a single word' });
   }
   const playerId = req.player.id;
-  const gameData = (await redis.hgetall(`game:${gameId}`)) as Game;
-  gameData.startUnixTime = Number(gameData.startUnixTime);
+  const gameData = await getGameData(gameId);
   const { playerAId, playerBId, startingPlayerId, startUnixTime } = gameData;
 
   // ensure game exists
@@ -156,9 +159,7 @@ export async function haveTurn(req, res) {
     return res.status(404).json({ message: `no game with given id found` });
   }
 
-  const gameTurnsKey = `game:${gameId}:turns`;
-  const turnIds = (await redis.lrange(gameTurnsKey, 0, -1)) as string[];
-
+  const turnIds = await getTurnIds(gameId);
   // if first turn
   if (!turnIds.length) {
     ensureWordFromCurrentPlayer(startingPlayerId, playerId);
@@ -185,7 +186,7 @@ export async function haveTurn(req, res) {
         word: finalWord,
         submitUnixTime: Date.now(),
       },
-      gameTurnsKey,
+      gameId,
     );
 
     emitValidWord(playerAId, playerBId, finalWord);
@@ -196,9 +197,7 @@ export async function haveTurn(req, res) {
   }
 
   // if not the first turn
-  const turns = await Promise.all(
-    turnIds.map((id) => redis.hgetall(id) as Turn),
-  );
+  const turns = await Promise.all(getTurns(turnIds));
   const lastTurn = turns[0];
   const currentPlayerId =
     lastTurn.playerId === gameData.playerAId
@@ -269,7 +268,7 @@ export async function haveTurn(req, res) {
       word: finalWord,
       submitUnixTime: Date.now(),
     },
-    gameTurnsKey,
+    gameId,
   );
 
   emitValidWord(playerAId, playerBId, finalWord);
@@ -280,5 +279,26 @@ export async function haveTurn(req, res) {
 }
 
 export async function getGameResults(req, res) {
-  res.json(['hey']);
+  const { gameId } = req.body;
+  const playerId = req.player.id;
+
+  const { playerAId, playerBId, startingPlayerId, startUnixTime } =
+    await getGameData(gameId);
+
+  // get array of players (order corresponds to order the players went in)
+  const [playerANickname, playerBNickname] = await Promise.all(
+    getNicknames(playerAId, playerBId),
+  );
+  const playerA = {
+    id: playerAId,
+    nickname: playerANickname,
+    isYou: playerId === playerAId,
+  };
+  const playerB = {
+    id: playerBId,
+    nickname: playerBNickname,
+    isYou: playerId === playerBId,
+  };
+  const players =
+    startingPlayerId === playerAId ? [playerA, playerB] : [playerB, playerA];
 }
