@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
 import { ref } from 'vue'
+import type { Player } from '@/types.js'
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL
@@ -18,6 +19,10 @@ export function connectToWsServer(sessionId: string) {
   })
 }
 
-export function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+export function generatePlayerBracketText(isYou: Boolean) {
+  return `(${isYou ? 'you' : 'them'})`
+}
+
+export function generatePlayerText(player: Player) {
+  return `${player.nickname} ${generatePlayerBracketText(player.isYou)}`
 }

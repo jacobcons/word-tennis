@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { api, socket } from '@/utils.js'
+import { api, generatePlayerBracketText, socket } from '@/utils.js'
 import { useRoute } from 'vue-router'
 import { gameData } from '@/stores.js'
 import { useAnimatedTripleDotMessage } from '@/composables.js'
@@ -111,7 +111,7 @@ onUnmounted(() => {
   <div class="flex h-screen w-screen items-center justify-center">
     <div class="mx-auto flex flex-col items-center gap-y-20 px-4">
       <h2 class="text-2xl">
-        {{ currentPlayer.nickname }}'s turn ({{ currentPlayer.isYou ? 'you' : 'them' }})
+        {{ currentPlayer.nickname }}'s turn {{ generatePlayerBracketText(currentPlayer.isYou) }}
       </h2>
       <template v-if="isProcessingWord">
         <span class="text-xl">{{ evaluatingMessage }}</span>
