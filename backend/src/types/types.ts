@@ -3,6 +3,7 @@ export type Game = {
   playerBId: string;
   startingPlayerId: string;
   startUnixTime: number;
+  endReason: EndReason;
 };
 
 export type Turn = {
@@ -16,6 +17,13 @@ export type Player = {
   nickname: string;
   isYou?: boolean;
 };
+
+export enum EndReason {
+  InvalidWord = 'INVALID_WORD',
+  UnrelatedWord = 'UNRELATED_WORD',
+  SameSimilarWord = 'SAME_SIMILAR_WORD',
+  TookTooLong = 'TOOK_TOO_LONG',
+}
 
 export class HttpError extends Error {
   public status: number;

@@ -41,7 +41,7 @@ app.put('/players', createOrUpdatePlayer);
 app.post('/join-queue', verifySession, joinQueue);
 app.post('/leave-queue', verifySession, leaveQueue);
 app.post('/turns', verifySession, haveTurn);
-app.post('/games/:id/results', verifySession, getGameResults);
+app.get('/games/:id/results', verifySession, getGameResults);
 
 // error handler
 app.use(errorHandler);

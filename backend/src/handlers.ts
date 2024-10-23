@@ -1,15 +1,14 @@
 import {
   chatCompletion,
   clearTurnTimer,
-  createGameTimer,
   emitEndGame,
   emitProcessingWord,
   emitValidWord,
+  ensureGameExists,
   ensureWordFromCurrentPlayer,
   ensureWordIsValid,
   ensureWordSubmittedDuringTurn,
   generateIsValidWordPrompt,
-  generateIsYouObject,
   getFinalWord,
   getGameData,
   getNicknames,
@@ -17,10 +16,11 @@ import {
   getTurns,
   redis,
   saveTurn,
+  setEndReason,
   setTurnTimer,
 } from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
-import { Game, HttpError, Player, Turn } from '@/types/types.js';
+import { EndReason, HttpError, Player } from '@/types/types.js';
 import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
 import { io } from '@/index.js';
 import lemmatize from 'wink-lemmatizer';
@@ -152,12 +152,8 @@ export async function haveTurn(req, res) {
   }
   const playerId = req.player.id;
   const gameData = await getGameData(gameId);
+  ensureGameExists(gameData);
   const { playerAId, playerBId, startingPlayerId, startUnixTime } = gameData;
-
-  // ensure game exists
-  if (!Object.keys(gameData).length) {
-    return res.status(404).json({ message: `no game with given id found` });
-  }
 
   const turnIds = await getTurnIds(gameId);
   // if first turn
@@ -175,7 +171,7 @@ export async function haveTurn(req, res) {
       generateIsValidWordPrompt(word),
     );
 
-    ensureWordIsValid(isValidWordResponse, playerAId, playerBId);
+    ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
 
     // if valid word => keep word the same, otherwise use corrected word
     const finalWord = getFinalWord(isValidWordResponse, word);
@@ -197,8 +193,8 @@ export async function haveTurn(req, res) {
   }
 
   // if not the first turn
-  const turns = await Promise.all(getTurns(turnIds));
-  const lastTurn = turns[0];
+  const turns = await getTurns(turnIds);
+  const lastTurn = turns[turns.length - 1];
   const currentPlayerId =
     lastTurn.playerId === gameData.playerAId
       ? gameData.playerBId
@@ -221,10 +217,11 @@ export async function haveTurn(req, res) {
   ]);
 
   // ensure word is valid
-  ensureWordIsValid(isValidWordResponse, playerAId, playerBId);
+  ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
 
   // ensure word is related
   if (isRelatedWordResponse === 'n') {
+    await setEndReason(gameId, EndReason.UnrelatedWord);
     emitEndGame(playerAId, playerBId);
     throw new HttpError(409, `${word} is not related to ${lastTurn.word}`);
   }
@@ -254,6 +251,7 @@ export async function haveTurn(req, res) {
   );
   const matchingWord = match?.word;
   if (matchingWord) {
+    await setEndReason(gameId, EndReason.SameSimilarWord);
     emitEndGame(playerAId, playerBId);
     throw new HttpError(
       409,
@@ -279,11 +277,19 @@ export async function haveTurn(req, res) {
 }
 
 export async function getGameResults(req, res) {
-  const { gameId } = req.body;
+  const { id: gameId } = req.params;
   const playerId = req.player.id;
 
-  const { playerAId, playerBId, startingPlayerId, startUnixTime } =
-    await getGameData(gameId);
+  const gameData = await getGameData(gameId);
+  ensureGameExists(gameData);
+  const { playerAId, playerBId, startingPlayerId, endReason } = gameData;
+
+  console.log(playerId, playerAId, playerBId);
+  if (playerId !== playerAId && playerId !== playerBId) {
+    return res
+      .status(403)
+      .json({ message: 'player id must be one of the players in this game' });
+  }
 
   // get array of players (order corresponds to order the players went in)
   const [playerANickname, playerBNickname] = await Promise.all(
@@ -301,4 +307,21 @@ export async function getGameResults(req, res) {
   };
   const players =
     startingPlayerId === playerAId ? [playerA, playerB] : [playerB, playerA];
+
+  // get turns
+  const turns = await getTurns(await getTurnIds(gameId));
+
+  // get winner
+  const lastPlayerId = turns[turns.length - 1].playerId;
+  const otherPlayerId = lastPlayerId === playerAId ? playerBId : playerAId;
+  const winnerPlayerId =
+    endReason === EndReason.TookTooLong ? otherPlayerId : lastPlayerId;
+  const winner = winnerPlayerId === playerAId ? playerA : playerB;
+
+  res.json({
+    winner,
+    players,
+    turns,
+    endReason,
+  });
 }

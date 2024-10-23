@@ -2,7 +2,7 @@ import { pino } from 'pino';
 import Redis from 'ioredis';
 import OpenAI from 'openai';
 import { io } from '@/index.js';
-import { Game, HttpError, Turn } from '@/types/types.js';
+import { EndReason, Game, HttpError, Turn } from '@/types/types.js';
 import { v4 as uuidv4 } from 'uuid';
 import { TURN_TIME_S } from '@/constants.js';
 
@@ -56,13 +56,15 @@ export function ensureWordSubmittedDuringTurn(lastTurnUnixTime: number) {
   }
 }
 
-export function ensureWordIsValid(
+export async function ensureWordIsValid(
   isValidWordResponse: string,
   playerAId: string,
   playerBId: string,
+  gameId: string,
 ) {
   const isNotValidWord = isValidWordResponse === 'n';
   if (isNotValidWord) {
+    await setEndReason(gameId, EndReason.InvalidWord);
     emitEndGame(playerAId, playerBId);
     throw new HttpError(400, 'word must be a real word');
   }
@@ -97,7 +99,8 @@ export function setTurnTimer(
 ) {
   turnTimers.set(
     gameId,
-    setTimeout(() => {
+    setTimeout(async () => {
+      await setEndReason(gameId, EndReason.TookTooLong);
       emitEndGame(playerAId, playerBId);
     }, timeS * 1000),
   );
@@ -115,16 +118,10 @@ export function clearTurnTimer(
 
 export async function getGameData(gameId: string): Promise<Game> {
   const gameData = (await redis.hgetall(`game:${gameId}`)) as Game;
-  gameData.startUnixTime = Number(gameData.startUnixTime);
+  if (gameData.startUnixTime) {
+    gameData.startUnixTime = Number(gameData.startUnixTime);
+  }
   return gameData;
-}
-
-export async function saveTurn(turn: Turn, gameId: string) {
-  const turnKey = `turn:${uuidv4()}`;
-  await Promise.all([
-    redis.hset(turnKey, turn),
-    redis.lpush(getGameTurnsKey(gameId), turnKey),
-  ]);
 }
 
 export function getTurnIds(gameId: string): Promise<string[]> {
@@ -135,8 +132,8 @@ function getGameTurnsKey(gameId: string): string {
   return `game:${gameId}:turns`;
 }
 
-export function getTurns(turnIds: string[]): Promise<Turn>[] {
-  return turnIds.map((id) => redis.hgetall(id) as Promise<Turn>);
+export function getTurns(turnIds: string[]): Promise<Turn[]> {
+  return Promise.all(turnIds.map((id) => redis.hgetall(id) as Promise<Turn>));
 }
 
 export function getNicknames(
@@ -147,4 +144,22 @@ export function getNicknames(
     redis.hget(`player:${playerAId}`, 'nickname'),
     redis.hget(`player:${playerBId}`, 'nickname'),
   ];
+}
+
+export async function saveTurn(turn: Turn, gameId: string) {
+  const turnKey = `turn:${uuidv4()}`;
+  await Promise.all([
+    redis.hset(turnKey, turn),
+    redis.rpush(getGameTurnsKey(gameId), turnKey),
+  ]);
+}
+
+export function setEndReason(gameId: string, endReason: EndReason) {
+  return redis.hset(`game:${gameId}`, { endReason });
+}
+
+export function ensureGameExists(gameData: Game) {
+  if (!Object.keys(gameData).length) {
+    throw new HttpError(404, 'no game with given id found');
+  }
 }
