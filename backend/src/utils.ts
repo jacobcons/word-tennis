@@ -21,23 +21,26 @@ export const logger = pino({
 export const redis = new Redis(`${process.env.REDIS_URL}`);
 
 const openai = new OpenAI();
-export async function chatCompletion(content: string) {
+export async function chatCompletion(
+  systemContent: string,
+  userContent: string,
+) {
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
+        role: 'system',
+        content: systemContent,
+      },
+      {
         role: 'user',
-        content,
+        content: userContent,
       },
     ],
     temperature: 0,
   });
 
   return completion.choices[0].message.content as string;
-}
-
-export function generateIsValidWordPrompt(word) {
-  return `You are given the word ${word}. You must output y if its spelt correctly, the corrected word if a spell checker would correct it (e.g. rasberry->raspberry), or n if it's spelt incorrectly. The output must not exceed a single word.`;
 }
 
 export function ensureWordFromCurrentPlayer(

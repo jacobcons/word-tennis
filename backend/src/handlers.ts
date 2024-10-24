@@ -22,7 +22,11 @@ import {
 } from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
 import { EndReason, HttpError, Player } from '@/types/types.js';
-import { COUNTDOWN_TIME_S, TURN_TIME_S } from '@/constants.js';
+import {
+  COUNTDOWN_TIME_S,
+  IS_VALID_WORD_PROMPT,
+  TURN_TIME_S,
+} from '@/constants.js';
 import { io } from '@/index.js';
 import lemmatize from 'wink-lemmatizer';
 import { lancasterStemmer } from 'lancaster-stemmer';
@@ -177,7 +181,8 @@ export async function haveTurn(req, res) {
 
     // use ai to determine if word is valid,  output is either n=>invalid, y=>valid, or corrected spelling
     const isValidWordResponse = await chatCompletion(
-      generateIsValidWordPrompt(word),
+      IS_VALID_WORD_PROMPT,
+      word,
     );
 
     await ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
@@ -226,9 +231,10 @@ export async function haveTurn(req, res) {
 
   // check word is valid and related to previous word
   const [isValidWordResponse, isRelatedWordResponse] = await Promise.all([
-    chatCompletion(generateIsValidWordPrompt(word)),
+    chatCompletion(IS_VALID_WORD_PROMPT, word),
     chatCompletion(
-      `You are a bot that judges a word association game where users type related words back and forth to each other. Is ${word} related to ${lastTurn.word}. output y or n`,
+      `You are a bot that judges a word association game where users type related words back and forth to each other. output y or n`,
+      `is ${word} related to ${lastTurn.word}`,
     ),
   ]);
 
