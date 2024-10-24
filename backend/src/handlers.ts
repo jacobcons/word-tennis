@@ -18,6 +18,7 @@ import {
   saveTurn,
   setEndReason,
   setTurnTimer,
+  updateTurn,
 } from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
 import { EndReason, HttpError, Player } from '@/types/types.js';
@@ -166,23 +167,30 @@ export async function haveTurn(req, res) {
 
     emitProcessingWord(playerAId, playerBId);
 
+    const turnKey = await saveTurn(
+      {
+        playerId,
+        word,
+      },
+      gameId,
+    );
+
     // use ai to determine if word is valid,  output is either n=>invalid, y=>valid, or corrected spelling
     const isValidWordResponse = await chatCompletion(
       generateIsValidWordPrompt(word),
     );
 
-    ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
+    await ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
 
     // if valid word => keep word the same, otherwise use corrected word
     const finalWord = getFinalWord(isValidWordResponse, word);
 
-    await saveTurn(
+    await updateTurn(
       {
-        playerId,
         word: finalWord,
         submitUnixTime: Date.now(),
       },
-      gameId,
+      turnKey,
     );
 
     emitValidWord(playerAId, playerBId, finalWord);
@@ -194,7 +202,7 @@ export async function haveTurn(req, res) {
 
   // if not the first turn
   const turns = await getTurns(turnIds);
-  const lastTurn = turns[turns.length - 1];
+  const lastTurn = turns.at(-1);
   const currentPlayerId =
     lastTurn.playerId === gameData.playerAId
       ? gameData.playerBId
@@ -208,6 +216,14 @@ export async function haveTurn(req, res) {
 
   emitProcessingWord(playerAId, playerBId);
 
+  const turnKey = await saveTurn(
+    {
+      playerId,
+      word,
+    },
+    gameId,
+  );
+
   // check word is valid and related to previous word
   const [isValidWordResponse, isRelatedWordResponse] = await Promise.all([
     chatCompletion(generateIsValidWordPrompt(word)),
@@ -217,7 +233,16 @@ export async function haveTurn(req, res) {
   ]);
 
   // ensure word is valid
-  ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
+  await ensureWordIsValid(isValidWordResponse, playerAId, playerBId, gameId);
+
+  // if valid word => keep word the same, otherwise use corrected word
+  const finalWord = getFinalWord(isValidWordResponse, word);
+  await updateTurn(
+    {
+      word: finalWord,
+    },
+    turnKey,
+  );
 
   // ensure word is related
   if (isRelatedWordResponse === 'n') {
@@ -225,9 +250,6 @@ export async function haveTurn(req, res) {
     emitEndGame(playerAId, playerBId);
     throw new HttpError(409, `${word} is not related to ${lastTurn.word}`);
   }
-
-  // if valid word => keep word the same, otherwise use corrected word
-  const finalWord = getFinalWord(isValidWordResponse, word);
 
   // ensure word isn't same (including lemma/stems) as any previous words
   const wordData = extractLemmasAndStem(finalWord);
@@ -260,13 +282,11 @@ export async function haveTurn(req, res) {
   }
 
   // save turn to db
-  await saveTurn(
+  await updateTurn(
     {
-      playerId,
-      word: finalWord,
       submitUnixTime: Date.now(),
     },
-    gameId,
+    turnKey,
   );
 
   emitValidWord(playerAId, playerBId, finalWord);
@@ -284,7 +304,6 @@ export async function getGameResults(req, res) {
   ensureGameExists(gameData);
   const { playerAId, playerBId, startingPlayerId, endReason } = gameData;
 
-  console.log(playerId, playerAId, playerBId);
   if (playerId !== playerAId && playerId !== playerBId) {
     return res
       .status(403)
@@ -312,10 +331,12 @@ export async function getGameResults(req, res) {
   const turns = await getTurns(await getTurnIds(gameId));
 
   // get winner
-  const lastPlayerId = turns[turns.length - 1].playerId;
+  const lastPlayerId = turns.at(-1)?.playerId || startingPlayerId;
   const otherPlayerId = lastPlayerId === playerAId ? playerBId : playerAId;
   const winnerPlayerId =
-    endReason === EndReason.TookTooLong ? otherPlayerId : lastPlayerId;
+    !turns.length || endReason !== EndReason.TookTooLong
+      ? otherPlayerId
+      : lastPlayerId;
   const winner = winnerPlayerId === playerAId ? playerA : playerB;
 
   res.json({

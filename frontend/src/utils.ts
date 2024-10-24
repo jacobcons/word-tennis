@@ -24,5 +24,5 @@ export function generatePlayerBracketText(isYou: Boolean) {
 }
 
 export function generatePlayerText(player: Player) {
-  return `${player.nickname} ${generatePlayerBracketText(player.isYou)}`
+  return `${player.nickname} <span class="font-bold">${generatePlayerBracketText(player.isYou)}</span>`
 }

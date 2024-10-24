@@ -51,7 +51,11 @@ export function ensureWordFromCurrentPlayer(
 
 export function ensureWordSubmittedDuringTurn(lastTurnUnixTime: number) {
   const timeSinceLastTurnS = (Date.now() - lastTurnUnixTime) / 1000;
-  if (timeSinceLastTurnS > TURN_TIME_S || timeSinceLastTurnS < 0) {
+  if (
+    isNaN(timeSinceLastTurnS) ||
+    timeSinceLastTurnS > TURN_TIME_S ||
+    timeSinceLastTurnS < 0
+  ) {
     throw new HttpError(409, 'word must be submitted during your turn');
   }
 }
@@ -146,12 +150,17 @@ export function getNicknames(
   ];
 }
 
-export async function saveTurn(turn: Turn, gameId: string) {
+export async function saveTurn(turn: Partial<Turn>, gameId: string) {
   const turnKey = `turn:${uuidv4()}`;
   await Promise.all([
     redis.hset(turnKey, turn),
     redis.rpush(getGameTurnsKey(gameId), turnKey),
   ]);
+  return turnKey;
+}
+
+export async function updateTurn(turn: Partial<Turn>, turnKey: string) {
+  await redis.hset(turnKey, turn);
 }
 
 export function setEndReason(gameId: string, endReason: EndReason) {
