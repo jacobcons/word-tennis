@@ -26,7 +26,7 @@ export async function chatCompletion(
   userContent: string,
 ) {
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: process.env.NODE_ENV === 'dev' ? 'gpt-4o-mini' : 'gpt-4o',
     messages: [
       {
         role: 'system',
