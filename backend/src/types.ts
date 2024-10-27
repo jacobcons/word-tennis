@@ -18,6 +18,8 @@ export type Player = {
   isYou?: boolean;
 };
 
+export type TurnTimers = Map<string, NodeJS.Timeout>;
+
 export enum EndReason {
   InvalidWord = 'INVALID_WORD',
   UnrelatedWord = 'UNRELATED_WORD',

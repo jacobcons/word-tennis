@@ -8,12 +8,12 @@ import {
   ensureWordFromCurrentPlayer,
   ensureWordIsValid,
   ensureWordSubmittedDuringTurn,
-  generateIsValidWordPrompt,
   getFinalWord,
   getGameData,
   getNicknames,
   getTurnIds,
   getTurns,
+  logger,
   redis,
   saveTurn,
   setEndReason,
@@ -21,7 +21,7 @@ import {
   updateTurn,
 } from '@/utils.js';
 import { v4 as uuidv4 } from 'uuid';
-import { EndReason, HttpError, Player } from '@/types/types.js';
+import { EndReason, HttpError, Player, Turn, TurnTimers } from '@/types.js';
 import {
   COUNTDOWN_TIME_S,
   IS_VALID_WORD_PROMPT,
@@ -64,14 +64,27 @@ export async function createOrUpdatePlayer(req, res) {
   res.end();
 }
 
-const turnTimers: Map<string, number> = new Map();
+const turnTimers: TurnTimers = new Map();
+redis.defineCommand('checkAndPopPlayers', {
+  numberOfKeys: 0,
+  lua: `
+      local playersInQueue = redis.call('ZCOUNT', 'queue', '-inf', '+inf')
+
+      if playersInQueue >= 2 then
+        local players = redis.call('ZPOPMIN', 'queue', 2)
+        return players
+      else
+        return {}
+      end
+  `,
+});
 
 export async function joinQueue(req, res) {
   await redis.zadd('queue', [+new Date(), req.player.id]);
 
-  const playersInQueue = await redis.zcount('queue', -Infinity, Infinity);
-  if (playersInQueue >= 2) {
-    const [playerAId, , playerBId] = await redis.zpopmin('queue', 2);
+  const playersToPair = await redis.checkAndPopPlayers();
+  if (playersToPair.length) {
+    const [playerAId, , playerBId] = playersToPair;
 
     // fetch nicknames
     const [playerANickname, playerBNickname] = await Promise.all(
@@ -207,7 +220,7 @@ export async function haveTurn(req, res) {
 
   // if not the first turn
   const turns = await getTurns(turnIds);
-  const lastTurn = turns.at(-1);
+  const lastTurn = turns.at(-1) as Turn;
   const currentPlayerId =
     lastTurn.playerId === gameData.playerAId
       ? gameData.playerBId

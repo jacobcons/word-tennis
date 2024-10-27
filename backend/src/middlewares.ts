@@ -1,6 +1,6 @@
 import { logger, redis } from '@/utils.js';
 import { ErrorRequestHandler } from 'express';
-import { HttpError } from '@/types/types.js';
+import { HttpError } from '@/types.js';
 
 export function logRequestResponse(req, res, next) {
   const startTime = new Date().getTime();

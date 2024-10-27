@@ -2,7 +2,7 @@ import { pino } from 'pino';
 import Redis from 'ioredis';
 import OpenAI from 'openai';
 import { io } from '@/index.js';
-import { EndReason, Game, HttpError, Turn } from '@/types/types.js';
+import { EndReason, Game, HttpError, Turn, TurnTimers } from '@/types.js';
 import { v4 as uuidv4 } from 'uuid';
 import { TURN_TIME_S } from '@/constants.js';
 
@@ -98,7 +98,7 @@ export function getFinalWord(isValidWordResponse: string, word: string) {
 }
 
 export function setTurnTimer(
-  turnTimers: Map<string, number>,
+  turnTimers: TurnTimers,
   gameId: string,
   timeS: number,
   playerAId: string,
@@ -113,10 +113,7 @@ export function setTurnTimer(
   );
 }
 
-export function clearTurnTimer(
-  turnTimers: Map<string, number>,
-  gameId: string,
-) {
+export function clearTurnTimer(turnTimers: TurnTimers, gameId: string) {
   const timerIntervalId = turnTimers.get(gameId);
   if (timerIntervalId) {
     clearInterval(timerIntervalId);
