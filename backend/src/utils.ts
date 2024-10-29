@@ -4,9 +4,7 @@ import OpenAI from 'openai';
 import { io } from '@/index.js';
 import { EndReason, Game, HttpError, Turn, TurnTimers } from '@/types.js';
 import { v4 as uuidv4 } from 'uuid';
-import { GAME_DATA_TTL, TURN_TIME_S } from '@/constants.js';
-import NodeCache from 'node-cache';
-const cache = new NodeCache();
+import { GAME_DATA_TTL_S, TURN_TIME_S } from '@/constants.js';
 
 export const logger = pino({
   level: process.env.NODE_ENV === 'dev' ? 'trace' : 'info',
@@ -112,26 +110,30 @@ export function getFinalWord(isValidWordResponse: string, word: string) {
   return isValidWordResponse === 'y' ? word : isValidWordResponse;
 }
 
+const turnTimers = new Map<string, NodeJS.Timeout>();
+
 export function setTurnTimer(
   gameId: string,
   timeS: number,
   playerAId: string,
   playerBId: string,
 ) {
-  cache.set<NodeJS.Timeout>(
+  turnTimers.set(
     gameId,
     setTimeout(async () => {
       await setEndReason(gameId, EndReason.TookTooLong);
       emitEndGame(playerAId, playerBId);
     }, timeS * 1000),
-    GAME_DATA_TTL,
   );
+
+  setTimeout(() => {
+    turnTimers.delete(gameId);
+  }, GAME_DATA_TTL_S * 1000);
 }
 
 export function clearTurnTimer(gameId: string) {
-  const turnTimer = cache.get<NodeJS.Timeout>(gameId);
+  const turnTimer = turnTimers.get(gameId);
   if (turnTimer) {
-    logger.debug(turnTimer, 'turnTimer');
     clearTimeout(turnTimer);
   }
 }

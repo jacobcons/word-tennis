@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { EndReason, HttpError, Player, Turn, TurnTimers } from '@/types.js';
 import {
   COUNTDOWN_TIME_S,
-  GAME_DATA_TTL,
+  GAME_DATA_TTL_S,
   IS_VALID_WORD_PROMPT,
   TURN_TIME_S,
 } from '@/constants.js';
@@ -118,7 +118,7 @@ export async function joinQueue(req, res) {
     };
     const gameId = uuidv4();
     await redis.hset(`game:${gameId}`, gameDataForRedis);
-    await redis.expire(`game:${gameId}`, GAME_DATA_TTL);
+    await redis.expire(`game:${gameId}`, GAME_DATA_TTL_S);
     // emit game data to matched players
     const gameDataForPlayers = {
       gameId,
