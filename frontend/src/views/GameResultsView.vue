@@ -32,41 +32,39 @@ function convertEndReasonToText(endReason: EndReason) {
 </script>
 <template>
   <div class="mx-auto my-24 flex flex-col items-center px-4 text-center" v-if="results">
-    <h1 class="xs:text-4xl mb-12 text-3xl">
+    <h1 class="mb-8 text-3xl xs:text-4xl">
       {{ results.winner.nickname }} wins {{ generatePlayerBracketText(results.winner.isYou) }}
     </h1>
 
-    <div class="xs:flex-row mb-8 flex flex-col items-center gap-8">
-      <div class="flex flex-col items-end gap-y-4">
-        <div
-          v-for="(player, i) in results.players"
-          :key="player.id"
-          class="flex items-baseline justify-center gap-x-4"
-        >
-          <h2 class="font-normal" v-html="generatePlayerText(player)"></h2>
-          <div class="h-4 w-4" :class="i % 2 === 0 ? 'bg-blue-400' : 'bg-red-400'"></div>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-y-4">
-        <router-link
-          to="/"
-          type="button"
-          class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        >
-          Home
-        </router-link>
-        <router-link
-          to="/search"
-          type="button"
-          class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        >
-          Play again
-        </router-link>
+    <div class="mb-8 flex flex-col items-center gap-4">
+      <div
+        v-for="(player, i) in results.players"
+        :key="player.id"
+        class="flex items-baseline justify-center gap-x-4"
+      >
+        <h2 class="font-normal" v-html="generatePlayerText(player)"></h2>
+        <div class="h-4 w-4" :class="i % 2 === 0 ? 'bg-blue-400' : 'bg-red-400'"></div>
       </div>
     </div>
 
-    <div class="mb-12 flex flex-col items-center gap-y-3">
+    <div class="mb-8 flex flex-col gap-4">
+      <router-link
+        to="/"
+        type="button"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+      >
+        Home
+      </router-link>
+      <router-link
+        to="/search"
+        type="button"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+      >
+        Play again
+      </router-link>
+    </div>
+
+    <div class="mb-8 flex flex-col items-center gap-y-3">
       <template v-for="(turn, i) in results.turns.slice(0, -1)" :key="i">
         <span
           class="text-2xl"
@@ -125,6 +123,23 @@ function convertEndReasonToText(endReason: EndReason) {
           >took too long</span
         >
       </template>
+    </div>
+
+    <div class="mb-8 flex flex-col gap-4">
+      <router-link
+        to="/"
+        type="button"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+      >
+        Home
+      </router-link>
+      <router-link
+        to="/search"
+        type="button"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+      >
+        Play again
+      </router-link>
     </div>
   </div>
 </template>
