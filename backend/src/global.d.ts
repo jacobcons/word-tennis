@@ -1,12 +1,12 @@
-declare global {
-  namespace Express {
-    interface Request {
-      player: {
-        id: number;
-      };
-    }
-  }
-}
+// declare global {
+//   namespace Express {
+//     interface Request {
+//       player: {
+//         id: number;
+//       };
+//     }
+//   }
+// }
 
 declare module 'wink-lemmatizer' {
   export function noun(word: string): string;

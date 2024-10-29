@@ -1,6 +1,7 @@
 import { logger, redis } from '@/utils.js';
-import { ErrorRequestHandler } from 'express';
+import { ErrorRequestHandler, NextFunction } from 'express';
 import { HttpError } from '@/types.js';
+import { Socket } from 'socket.io';
 
 export function logRequestResponse(req, res, next) {
   const startTime = new Date().getTime();
@@ -38,7 +39,7 @@ export function logRequestResponse(req, res, next) {
 }
 
 export async function verifySession(req, res, next) {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers?.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'No session ID provided' });
   }
@@ -48,7 +49,7 @@ export async function verifySession(req, res, next) {
   if (!playerId) {
     return res.status(401).json({ message: 'Invalid session ID' });
   }
-  req.player = { id: playerId };
+  res.locals.player = { id: playerId };
   next();
 }
 

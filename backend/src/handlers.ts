@@ -24,12 +24,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { EndReason, HttpError, Player, Turn, TurnTimers } from '@/types.js';
 import {
   COUNTDOWN_TIME_S,
+  GAME_DATA_TTL,
   IS_VALID_WORD_PROMPT,
   TURN_TIME_S,
 } from '@/constants.js';
 import { io } from '@/index.js';
 import lemmatize from 'wink-lemmatizer';
 import { lancasterStemmer } from 'lancaster-stemmer';
+import { Request, Response } from 'express';
 
 export async function createOrUpdatePlayer(req, res) {
   let nickname = req.body?.nickname;
@@ -65,22 +67,9 @@ export async function createOrUpdatePlayer(req, res) {
 }
 
 const turnTimers: TurnTimers = new Map();
-redis.defineCommand('checkAndPopPlayers', {
-  numberOfKeys: 0,
-  lua: `
-      local playersInQueue = redis.call('ZCOUNT', 'queue', '-inf', '+inf')
-
-      if playersInQueue >= 2 then
-        local players = redis.call('ZPOPMIN', 'queue', 2)
-        return players
-      else
-        return {}
-      end
-  `,
-});
 
 export async function joinQueue(req, res) {
-  await redis.zadd('queue', [+new Date(), req.player.id]);
+  await redis.zadd('queue', [+new Date(), res.locals.player.id]);
 
   const playersToPair = await redis.checkAndPopPlayers();
   if (playersToPair.length) {
@@ -129,7 +118,7 @@ export async function joinQueue(req, res) {
     };
     const gameId = uuidv4();
     await redis.hset(`game:${gameId}`, gameDataForRedis);
-
+    await redis.expire(`game:${gameId}`, GAME_DATA_TTL);
     // emit game data to matched players
     const gameDataForPlayers = {
       gameId,
@@ -144,31 +133,25 @@ export async function joinQueue(req, res) {
       ...gameDataForPlayers,
       players: playersForPlayerB,
     });
-    setTurnTimer(
-      turnTimers,
-      gameId,
-      COUNTDOWN_TIME_S + TURN_TIME_S,
-      playerAId,
-      playerBId,
-    );
+    setTurnTimer(gameId, COUNTDOWN_TIME_S + TURN_TIME_S, playerAId, playerBId);
   }
 
   res.end();
 }
 
 export async function leaveQueue(req, res) {
-  await redis.zrem('queue', req.player.id);
+  await redis.zrem('queue', res.locals.player.id);
   res.end();
 }
 
-export async function haveTurn(req, res) {
+export async function haveTurn(req: Request, res: Response) {
   let { gameId, word } = req.body;
-  // lower case and trim word
+  // lower case and trim word a
   word = word.toLowerCase().trim();
   if (!word.length || word.split(' ').length !== 1) {
     return res.status(400).json({ message: 'please supply a single word' });
   }
-  const playerId = req.player.id;
+  const playerId = res.locals.player.id;
   const gameData = await getGameData(gameId);
   ensureGameExists(gameData);
   const { playerAId, playerBId, startingPlayerId, startUnixTime } = gameData;
@@ -180,7 +163,7 @@ export async function haveTurn(req, res) {
 
     ensureWordSubmittedDuringTurn(startUnixTime);
 
-    clearTurnTimer(turnTimers, gameId);
+    clearTurnTimer(gameId);
 
     emitProcessingWord(playerAId, playerBId);
 
@@ -213,7 +196,7 @@ export async function haveTurn(req, res) {
 
     emitValidWord(playerAId, playerBId, finalWord);
 
-    setTurnTimer(turnTimers, gameId, TURN_TIME_S, playerAId, playerBId);
+    setTurnTimer(gameId, TURN_TIME_S, playerAId, playerBId);
 
     return res.json({ message: `${finalWord} has been added to turn` });
   }
@@ -230,7 +213,7 @@ export async function haveTurn(req, res) {
 
   ensureWordSubmittedDuringTurn(lastTurn.submitUnixTime);
 
-  clearTurnTimer(turnTimers, gameId);
+  clearTurnTimer(gameId);
 
   emitProcessingWord(playerAId, playerBId);
 
@@ -274,7 +257,7 @@ export async function haveTurn(req, res) {
   const wordData = extractLemmasAndStem(finalWord);
   const previousWords = turns.map((turn) => turn.word);
   const previousWordsData = previousWords.map(extractLemmasAndStem);
-  function extractLemmasAndStem(word) {
+  function extractLemmasAndStem(word: string) {
     return {
       word,
       lemmas: new Set([
@@ -310,14 +293,14 @@ export async function haveTurn(req, res) {
 
   emitValidWord(playerAId, playerBId, finalWord);
 
-  setTurnTimer(turnTimers, gameId, TURN_TIME_S, playerAId, playerBId);
+  setTurnTimer(gameId, TURN_TIME_S, playerAId, playerBId);
 
   return res.json({ message: `${finalWord} has been added to turn` });
 }
 
 export async function getGameResults(req, res) {
   const { id: gameId } = req.params;
-  const playerId = req.player.id;
+  const playerId = res.locals.player.id;
 
   const gameData = await getGameData(gameId);
   ensureGameExists(gameData);

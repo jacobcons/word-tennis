@@ -4,7 +4,9 @@ import OpenAI from 'openai';
 import { io } from '@/index.js';
 import { EndReason, Game, HttpError, Turn, TurnTimers } from '@/types.js';
 import { v4 as uuidv4 } from 'uuid';
-import { TURN_TIME_S } from '@/constants.js';
+import { GAME_DATA_TTL, TURN_TIME_S } from '@/constants.js';
+import NodeCache from 'node-cache';
+const cache = new NodeCache();
 
 export const logger = pino({
   level: process.env.NODE_ENV === 'dev' ? 'trace' : 'info',
@@ -18,7 +20,20 @@ export const logger = pino({
 });
 
 // @ts-expect-error
-export const redis = new Redis(`${process.env.REDIS_URL}`);
+export const redis = new Redis(`${process.env.REDIS_URL}`) as Redis;
+redis.defineCommand('checkAndPopPlayers', {
+  numberOfKeys: 0,
+  lua: `
+      local playersInQueue = redis.call('ZCOUNT', 'queue', '-inf', '+inf')
+
+      if playersInQueue >= 2 then
+        local players = redis.call('ZPOPMIN', 'queue', 2)
+        return players
+      else
+        return {}
+      end
+  `,
+});
 
 const openai = new OpenAI();
 export async function chatCompletion(
@@ -98,25 +113,26 @@ export function getFinalWord(isValidWordResponse: string, word: string) {
 }
 
 export function setTurnTimer(
-  turnTimers: TurnTimers,
   gameId: string,
   timeS: number,
   playerAId: string,
   playerBId: string,
 ) {
-  turnTimers.set(
+  cache.set<NodeJS.Timeout>(
     gameId,
     setTimeout(async () => {
       await setEndReason(gameId, EndReason.TookTooLong);
       emitEndGame(playerAId, playerBId);
     }, timeS * 1000),
+    GAME_DATA_TTL,
   );
 }
 
-export function clearTurnTimer(turnTimers: TurnTimers, gameId: string) {
-  const timerIntervalId = turnTimers.get(gameId);
-  if (timerIntervalId) {
-    clearInterval(timerIntervalId);
+export function clearTurnTimer(gameId: string) {
+  const turnTimer = cache.get<NodeJS.Timeout>(gameId);
+  if (turnTimer) {
+    logger.debug(turnTimer, 'turnTimer');
+    clearTimeout(turnTimer);
   }
 }
 

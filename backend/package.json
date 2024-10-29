@@ -8,9 +8,9 @@
     "build": "tsc && tsc-alias",
     "dev": "tsx watch --inspect ./src/index.ts",
     "lint": "npx eslint . --ext .ts",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit --watch",
     "seed": "tsx ./scripts/seed.ts",
-    "temp": "node scripts/temp.ts"
+    "temp": "tsx ./scripts/temp.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "@types/cors": "^2.8.17",
     "@types/eslint__js": "^8.42.3",
     "@types/express": "^4.17.21",
+    "@types/node": "^22.8.1",
     "@types/nspell": "^2.1.6",
     "@types/string-similarity": "^4.0.2",
     "@types/uuid": "^10.0.0",
@@ -33,7 +34,6 @@
     "typescript-eslint": "^8.3.0"
   },
   "dependencies": {
-    "@types/node": "^22.5.1",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "express": "^5.0.1",
