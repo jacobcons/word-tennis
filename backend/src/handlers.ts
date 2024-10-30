@@ -117,8 +117,10 @@ export async function joinQueue(req, res) {
       startUnixTime: Date.now() + COUNTDOWN_TIME_S * 1000,
     };
     const gameId = uuidv4();
+    console.time();
     await redis.hset(`game:${gameId}`, gameDataForRedis);
     await redis.expire(`game:${gameId}`, GAME_DATA_TTL_S);
+    console.timeEnd();
     // emit game data to matched players
     const gameDataForPlayers = {
       gameId,
