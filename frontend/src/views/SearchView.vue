@@ -3,26 +3,22 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { api, socket } from '@/utils.js'
 import router from '@/router/index.js'
 import { gameData } from '@/stores.js'
-
-// join queue
 import { useAnimatedTripleDotMessage } from '@/composables.js'
-;(async () => {
-  await api.post('join-queue')
-})()
-
-// match with player => go to game view
-socket.on('matched', async (serverGameData) => {
-  gameData.value = serverGameData
-  await router.push({ path: `/game/${gameData.value.gameId}` })
-})
 
 // display animated searching for player message
-// close window => leave queue
 const nickname = localStorage.getItem('nickname')
 const { animatedTripleDotMessage: searchingMessage } =
   useAnimatedTripleDotMessage('Searching for players')
+
 onMounted(async () => {
+  // close window => leave queue
   window.addEventListener('beforeunload', leaveQueue)
+  // match with player => go to game view
+  socket.on('matched', async (serverGameData) => {
+    gameData.value = serverGameData
+    await router.push({ path: `/game/${gameData.value.gameId}` })
+  })
+  await api.post('join-queue')
 })
 
 // teardown
