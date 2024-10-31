@@ -3,6 +3,7 @@ import cors from 'cors';
 import {
   errorHandler,
   logRequestResponse,
+  notFoundHandler,
   verifySession,
   verifySessionWs,
 } from '@/middlewares.js';
@@ -43,6 +44,7 @@ app.post('/turns', verifySession, haveTurn);
 app.get('/games/:id/results', verifySession, getGameResults);
 
 // error handler
+app.use(notFoundHandler);
 app.use(errorHandler);
 
 // start the HTTP server

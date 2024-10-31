@@ -71,3 +71,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err, err.message);
   return res.status(500).json({ message: 'something went wrong!' });
 };
+
+export function notFoundHandler(req, res, next) {
+  return res
+    .status(404)
+    .json({ message: `${req.method} ${req.path} not found` });
+}
