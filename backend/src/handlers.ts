@@ -28,7 +28,7 @@ import {
   IS_VALID_WORD_PROMPT,
   TURN_TIME_S,
 } from '@/constants.js';
-import { io } from '@/index.js';
+import { io } from '@/app.js';
 import lemmatize from 'wink-lemmatizer';
 import { lancasterStemmer } from 'lancaster-stemmer';
 import { Request, Response } from 'express';
@@ -117,10 +117,8 @@ export async function joinQueue(req, res) {
       startUnixTime: Date.now() + COUNTDOWN_TIME_S * 1000,
     };
     const gameId = uuidv4();
-    console.time();
     await redis.hset(`game:${gameId}`, gameDataForRedis);
     await redis.expire(`game:${gameId}`, GAME_DATA_TTL_S);
-    console.timeEnd();
     // emit game data to matched players
     const gameDataForPlayers = {
       gameId,

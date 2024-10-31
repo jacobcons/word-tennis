@@ -4,13 +4,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && tsc-alias",
-    "dev": "tsx watch --inspect ./src/index.ts",
-    "lint": "npx eslint . --ext .ts",
+    "dev": "tsx watch --inspect ./src/app.ts",
+    "lint": "eslint . --ext .ts",
     "type-check": "tsc --noEmit --watch",
     "seed": "tsx ./scripts/seed.ts",
-    "temp": "tsx ./scripts/temp.ts"
+    "temp": "tsx ./scripts/temp.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && tsc-alias"
   },
   "keywords": [],
   "author": "",

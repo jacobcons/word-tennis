@@ -1,7 +1,7 @@
 import { pino } from 'pino';
 import Redis from 'ioredis';
 import OpenAI from 'openai';
-import { io } from '@/index.js';
+import { io } from '@/app.js';
 import { EndReason, Game, HttpError, Turn, TurnTimers } from '@/types.js';
 import { v4 as uuidv4 } from 'uuid';
 import { GAME_DATA_TTL_S, TURN_TIME_S } from '@/constants.js';
