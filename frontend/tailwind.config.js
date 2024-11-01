@@ -48,5 +48,6 @@ export default {
       }
     }
   },
+  safelist: ['bg-blue-400', 'bg-red-400', 'text-blue-400', 'text-red-400'],
   plugins: [flowbiteTypography]
 }
