@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import { api, generatePlayerBracketText, socket } from '@/utils.js'
 import { useRoute } from 'vue-router'
 import { gameData } from '@/stores.js'
@@ -15,15 +15,17 @@ const turnTimeLeft = ref(TURN_TIME_S)
 const turnTimeBarWidth = ref(100)
 let turnTimeIntervalId: number
 let turnTimeBarIntervalId: number
+const wordInput = useTemplateRef<HTMLInputElement>('word-input')
 
 onMounted(() => {
   // start countdown game timer
   const countdownIntervalId = setInterval(() => {
     countdownTimeLeft.value -= 1
-    // when countdown reaches 0 => stop it, and start turn timer
+    // when countdown reaches 0 => stop it, and start turn timer, focus on input
     if (countdownTimeLeft.value == 0) {
       clearInterval(countdownIntervalId)
       startTurnTimer()
+      focusOnWordInput()
     }
   }, 1000)
 })
@@ -47,6 +49,14 @@ function startTurnTimer() {
     }
   }, TICK_LENGTH_MS)
   return { turnTimeIntervalId, turnTimeBarIntervalId }
+}
+
+function focusOnWordInput() {
+  nextTick(() => {
+    if (wordInput.value) {
+      wordInput.value.focus()
+    }
+  })
 }
 
 /* TURN MANAGEMENT */
@@ -93,6 +103,7 @@ socket.on('valid-word', (word: string) => {
   turnTimeLeft.value = TURN_TIME_S
   turnTimeBarWidth.value = 100
   startTurnTimer()
+  focusOnWordInput()
 })
 
 // game must end => go to results s
@@ -165,6 +176,7 @@ onUnmounted(() => {
           class="text-small block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
           required
           :disabled="countdownTimeLeft > 0 || !currentPlayer.isYou || isProcessingWord"
+          ref="word-input"
         />
         <p class="mt-2 text-sm text-red-600 dark:text-red-500" v-if="enterSingleWordError">
           Please supply a single word
