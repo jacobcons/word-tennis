@@ -32,7 +32,7 @@ function convertEndReasonToText(endReason: EndReason) {
 </script>
 <template>
   <div class="mx-auto my-24 flex flex-col items-center px-4 text-center" v-if="results">
-    <h1 class="mb-8 text-3xl xs:text-4xl">
+    <h1 class="mb-8 text-xl xs:text-3xl">
       {{ results.winner.nickname }} wins {{ generatePlayerBracketText(results.winner.isYou) }}
     </h1>
 
@@ -42,7 +42,7 @@ function convertEndReasonToText(endReason: EndReason) {
         :key="player.id"
         class="flex items-baseline justify-center gap-x-4"
       >
-        <h2 class="font-normal" v-html="generatePlayerText(player)"></h2>
+        <h2 class="text-base font-normal xs:text-xl" v-html="generatePlayerText(player)"></h2>
         <div class="h-4 w-4" :class="i % 2 === 0 ? 'bg-blue-400' : 'bg-red-400'"></div>
       </div>
     </div>

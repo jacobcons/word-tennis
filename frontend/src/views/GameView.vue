@@ -120,7 +120,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex h-screen w-screen items-center justify-center">
-    <div class="mx-auto flex flex-col items-center gap-y-20 px-4">
+    <div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-y-20 px-4">
       <h2 class="text-2xl">
         {{ currentPlayer.nickname }}'s turn {{ generatePlayerBracketText(currentPlayer.isYou) }}
       </h2>
