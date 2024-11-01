@@ -8,13 +8,10 @@ import { GAME_DATA_TTL_S, TURN_TIME_S } from '@/constants.js';
 
 export const logger = pino({
   level: 'trace',
-  transport:
-    process.env.NODE_ENV === 'dev'
-      ? {
-          target: 'pino-pretty',
-          options: { colorize: true },
-        }
-      : undefined,
+  transport: {
+    target: 'pino-pretty',
+    options: { colorize: true },
+  },
 });
 
 // @ts-expect-error
