@@ -21,6 +21,7 @@ export enum EndReason {
 export type GameResults = {
   winner: Player
   players: Player[]
+  startingPlayerId: string
   turns: {
     playerId: string
     word: string

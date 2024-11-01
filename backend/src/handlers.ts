@@ -326,8 +326,7 @@ export async function getGameResults(req, res) {
     nickname: playerBNickname,
     isYou: playerId === playerBId,
   };
-  const players =
-    startingPlayerId === playerAId ? [playerA, playerB] : [playerB, playerA];
+  const players = [playerA, playerB];
 
   // get turns
   const turns = await getTurns(await getTurnIds(gameId));

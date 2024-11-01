@@ -7,16 +7,16 @@ import { EndReason, type GameResults } from '@/types.js'
 const route = useRoute()
 const gameId = route.params.id
 const results = ref<GameResults>()
-
-const TEXT_COLOUR_FIRST_PLAYER = 'text-blue-400'
-const TEXT_COLOUR_SECOND_PLAYER = 'text-red-400'
-let colourOfLastWord: string
+let loserId: string
 
 onMounted(async () => {
   const response = await api.get(`/games/${gameId}/results`)
   results.value = response.data as GameResults
-  colourOfLastWord =
-    results.value.turns.length % 2 === 0 ? TEXT_COLOUR_SECOND_PLAYER : TEXT_COLOUR_FIRST_PLAYER
+  // get id of player after last
+  loserId =
+    results.value.winner.id === results.value.players[0].id
+      ? results.value.players[1].id
+      : results.value.players[0].id
 })
 
 function convertEndReasonToText(endReason: EndReason) {
@@ -28,6 +28,11 @@ function convertEndReasonToText(endReason: EndReason) {
     case EndReason.SameSimilarWord:
       return 'same/too similar to a previous word'
   }
+}
+
+function getPlayerColour(playerId: string) {
+  const res = results.value as GameResults
+  return playerId === res.players[0].id ? 'blue-400' : 'red-400'
 }
 </script>
 <template>
@@ -43,7 +48,7 @@ function convertEndReasonToText(endReason: EndReason) {
         class="flex items-baseline justify-center gap-x-4"
       >
         <h2 class="text-base font-normal xs:text-xl" v-html="generatePlayerText(player)"></h2>
-        <div class="h-4 w-4" :class="i % 2 === 0 ? 'bg-blue-400' : 'bg-red-400'"></div>
+        <div class="h-4 w-4" :class="`bg-${getPlayerColour(player.id)}`"></div>
       </div>
     </div>
 
@@ -65,12 +70,29 @@ function convertEndReasonToText(endReason: EndReason) {
     </div>
 
     <div class="mb-8 flex flex-col items-center gap-y-3">
-      <template v-for="(turn, i) in results.turns.slice(0, -1)" :key="i">
-        <span
-          class="text-2xl"
-          :class="[i % 2 === 0 ? TEXT_COLOUR_FIRST_PLAYER : TEXT_COLOUR_SECOND_PLAYER]"
+      <template v-if="results.endReason === EndReason.TookTooLong">
+        <span class="text-2xl" :class="`text-${getPlayerColour(loserId)}`">took too long</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
         >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
+          />
+        </svg>
+      </template>
+      <template v-for="(turn, i) in results.turns.reverse()" :key="i">
+        <span class="text-2xl" :class="`text-${getPlayerColour(turn.playerId)}`">
           {{ turn.word }}
+          <template v-if="results.endReason !== EndReason.TookTooLong && i === 0">
+            ({{ convertEndReasonToText(results.endReason) }})
+          </template>
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -83,45 +105,9 @@ function convertEndReasonToText(endReason: EndReason) {
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3"
+            d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
           />
         </svg>
-      </template>
-      <span
-        class="text-2xl"
-        :class="[
-          results.turns.length % 2 === 0 ? TEXT_COLOUR_SECOND_PLAYER : TEXT_COLOUR_FIRST_PLAYER
-        ]"
-        v-if="results.turns.length"
-      >
-        {{ results.turns[results.turns.length - 1].word }}
-        <template v-if="results.endReason !== EndReason.TookTooLong">
-          ({{ convertEndReasonToText(results.endReason) }})
-        </template>
-      </span>
-      <template v-if="results.endReason === EndReason.TookTooLong">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="size-6"
-          v-if="results.turns.length"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3"
-          />
-        </svg>
-        <span
-          class="text-2xl"
-          :class="[
-            results.turns.length % 2 === 0 ? TEXT_COLOUR_FIRST_PLAYER : TEXT_COLOUR_SECOND_PLAYER
-          ]"
-          >took too long</span
-        >
       </template>
     </div>
 
