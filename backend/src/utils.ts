@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { GAME_DATA_TTL_S, TURN_TIME_S } from '@/constants.js';
 
 export const logger = pino({
-  level: process.env.NODE_ENV === 'dev' ? 'trace' : 'info',
+  level: 'trace',
   transport:
     process.env.NODE_ENV === 'dev'
       ? {
