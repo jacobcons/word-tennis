@@ -87,7 +87,7 @@ function getPlayerColour(playerId: string) {
           />
         </svg>
       </template>
-      <template v-for="(turn, i) in results.turns.reverse()" :key="i">
+      <template v-for="(turn, i) in [...results.turns].reverse()" :key="turn.id">
         <span class="text-2xl" :class="`text-${getPlayerColour(turn.playerId)}`">
           {{ turn.word }}
           <template v-if="results.endReason !== EndReason.TookTooLong && i === 0">
