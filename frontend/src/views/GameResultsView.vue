@@ -56,14 +56,14 @@ function getPlayerColour(playerId: string) {
       <router-link
         to="/"
         type="button"
-        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
       >
         Home
       </router-link>
       <router-link
         to="/search"
         type="button"
-        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
       >
         Play again
       </router-link>
@@ -115,14 +115,14 @@ function getPlayerColour(playerId: string) {
       <router-link
         to="/"
         type="button"
-        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
       >
         Home
       </router-link>
       <router-link
         to="/search"
         type="button"
-        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        class="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white no-underline hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
       >
         Play again
       </router-link>

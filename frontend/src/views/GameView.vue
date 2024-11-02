@@ -129,7 +129,7 @@ onUnmounted(() => {
         <div role="status">
           <svg
             aria-hidden="true"
-            class="inline h-8 w-8 animate-spin fill-gray-600 text-gray-200 dark:fill-gray-300 dark:text-gray-600"
+            class="inline h-8 w-8 animate-spin fill-gray-600 text-gray-200"
             viewBox="0 0 100 101"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -152,17 +152,17 @@ onUnmounted(() => {
       <form @submit.prevent="sendWord" class="w-full max-w-md">
         <div class="mb-1 flex justify-between">
           <span
-            class="text-base font-medium text-blue-700 dark:text-white"
+            class="text-base font-medium text-blue-700"
             :class="{ 'text-gray-400': isProcessingWord }"
             >Timer</span
           >
           <span
-            class="text-sm font-medium text-blue-700 dark:text-white"
+            class="text-sm font-medium text-blue-700"
             :class="{ 'text-gray-400': isProcessingWord }"
             >{{ `${turnTimeLeft}s` }}</span
           >
         </div>
-        <div class="mb-2 h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+        <div class="mb-2 h-2.5 w-full rounded-full bg-gray-200">
           <div
             class="h-2.5 rounded-full bg-blue-600"
             :style="{ width: `${turnTimeBarWidth}%` }"
@@ -173,12 +173,12 @@ onUnmounted(() => {
           v-model="wordToSend"
           type="text"
           placeholder="Type Word..."
-          class="text-small block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+          class="text-small block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-200"
           required
           :disabled="countdownTimeLeft > 0 || !currentPlayer.isYou || isProcessingWord"
           ref="word-input"
         />
-        <p class="mt-2 text-sm text-red-600 dark:text-red-500" v-if="enterSingleWordError">
+        <p class="mt-2 text-sm text-red-600" v-if="enterSingleWordError">
           Please supply a single word
         </p>
       </form>
