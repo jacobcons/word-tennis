@@ -12,15 +12,10 @@ export function addBearerTokenToAxios(token: string) {
 
 export const socket = io(import.meta.env.VITE_BACKEND_URL, { autoConnect: false })
 export function connectToWsServer(sessionId: string) {
-  return new Promise<void>((resolve) => {
-    socket.auth = {
-      token: sessionId
-    }
-    socket.connect()
-    socket.on('connect', () => {
-      resolve()
-    })
-  })
+  socket.auth = {
+    token: sessionId
+  }
+  socket.connect()
 }
 
 export function generatePlayerBracketText(isYou: Boolean) {

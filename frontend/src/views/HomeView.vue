@@ -19,7 +19,7 @@ async function start() {
   if (newSessionId) {
     localStorage.setItem('sessionId', newSessionId)
     addBearerTokenToAxios(newSessionId)
-    await connectToWsServer(newSessionId)
+    connectToWsServer(newSessionId)
   }
 
   localStorage.setItem('nickname', nickname.value)
