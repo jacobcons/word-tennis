@@ -11,7 +11,7 @@ const sessionId = localStorage.getItem('sessionId')
 
 if (sessionId) {
   addBearerTokenToAxios(sessionId)
-  connectToWsServer(sessionId)
+  await connectToWsServer(sessionId)
 }
 
 const app = createApp(App)
