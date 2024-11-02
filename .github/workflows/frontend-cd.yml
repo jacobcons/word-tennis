@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - '.github/workflows/frontend-cd.yml'
   workflow_dispatch:
 
 jobs:
@@ -28,6 +29,8 @@ jobs:
         run: npm install
 
       - name: Build the app
+        env:
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
         run: npm run build
 
       - name: Deploy to GitHub Pages
