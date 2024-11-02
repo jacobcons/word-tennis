@@ -18,9 +18,11 @@ onMounted(async () => {
     gameData.value = serverGameData
     await router.push({ path: `/game/${gameData.value.gameId}` })
   })
-  socket.on('connect', async () => {
-    await api.post('join-queue')
-  })
+
+  if (!socket.connected) {
+    await new Promise<void>((resolve) => socket.once('connect', resolve))
+  }
+  await api.post('join-queue')
 })
 
 // teardown
