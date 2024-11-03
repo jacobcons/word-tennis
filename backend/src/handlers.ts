@@ -230,7 +230,7 @@ export async function haveTurn(req: Request, res: Response) {
     chatCompletion(IS_VALID_WORD_PROMPT, word),
     chatCompletion(
       `You are a bot that judges a word association game where users type related words back and forth to each other. output y or n`,
-      `is ${word} related to ${lastTurn.word}`,
+      `is ${lastTurn.word} related to ${word}`,
     ),
   ]);
 
