@@ -229,7 +229,7 @@ export async function haveTurn(req: Request, res: Response) {
   const [isValidWordResponse, isRelatedWordResponse] = await Promise.all([
     chatCompletion(IS_VALID_WORD_PROMPT, word),
     chatCompletion(
-      `You are a bot that judges a word association game where users type related words back and forth to each other. output y or n`,
+      `You are a bot that judges a word association game where users type related words back and forth to each other. output y or n (note that antonyms are also considered related)`,
       `is ${lastTurn.word} related to ${word}`,
     ),
   ]);
