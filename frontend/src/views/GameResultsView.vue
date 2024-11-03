@@ -26,7 +26,7 @@ function convertEndReasonToText(endReason: EndReason) {
     case EndReason.UnrelatedWord:
       return 'not related to previous word'
     case EndReason.SameSimilarWord:
-      return 'same/too similar to a previous word'
+      return 'same as a previous word'
   }
 }
 
