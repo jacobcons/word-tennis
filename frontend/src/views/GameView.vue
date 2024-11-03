@@ -41,7 +41,8 @@ function startTurnTimer() {
 
   // start ticking down bar
   const TICK_LENGTH_MS = 5
-  const DECREASE_PER_TICK = TICK_LENGTH_MS / 50
+  const NUMBER_OF_TICKS = (TURN_TIME_S * 1000) / 5
+  const DECREASE_PER_TICK = 100 / NUMBER_OF_TICKS
   turnTimeBarIntervalId = setInterval(() => {
     turnTimeBarWidth.value -= DECREASE_PER_TICK
     if (turnTimeBarWidth.value <= 0) {
