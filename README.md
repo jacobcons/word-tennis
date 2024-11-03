@@ -3,6 +3,8 @@
 
 Multiplayer browser game in which users must type related words back and fourth under timed pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
 
+If you wish to test it by yourself, simply open one normal and one incognito tab.
+
 ### Developing backend locally
 1. Enter backend folder - `cd backend`
 2. Install npm packages - `npm i`
