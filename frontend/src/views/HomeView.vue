@@ -40,8 +40,8 @@ function setRandomNickname() {
     <div class="mx-auto flex max-w-2xl flex-col items-center gap-y-6 px-4 text-center">
       <h1 class="">Word Tennis</h1>
       <p class="">
-        This is a multiplayer game in which users must type related words back and fourth under
-        timed pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
+        This is a multiplayer game in which users must type related words back and forth under timed
+        pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
       </p>
       <p class="">Words cannot be repeated in any form, including variations like plurals</p>
       <p class="">Enter a nickname below and hit start to get paired with a random player</p>
