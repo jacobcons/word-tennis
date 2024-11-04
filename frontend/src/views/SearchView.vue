@@ -33,7 +33,7 @@ onBeforeUnmount(async () => {
 })
 
 function leaveQueue() {
-  api.post('leave-queue')
+  navigator.sendBeacon('/leave-queue')
 }
 </script>
 
