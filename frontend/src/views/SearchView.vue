@@ -27,13 +27,13 @@ onMounted(async () => {
 
 // teardown
 onBeforeUnmount(async () => {
-  await leaveQueue()
+  await api.post('leave-queue')
   socket.removeListener('matched')
   window.removeEventListener('beforeunload', leaveQueue)
 })
 
-async function leaveQueue() {
-  await api.post('leave-queue')
+function leaveQueue() {
+  api.post('leave-queue')
 }
 </script>
 
