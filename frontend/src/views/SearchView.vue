@@ -32,8 +32,14 @@ onBeforeUnmount(async () => {
   window.removeEventListener('beforeunload', leaveQueue)
 })
 
-function leaveQueue() {
-  navigator.sendBeacon('/leave-queue')
+async function leaveQueue() {
+  await fetch(`${import.meta.env.VITE_BACKEND_URL}/leave-queue`, {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('sessionId')}`
+    }
+  })
 }
 </script>
 

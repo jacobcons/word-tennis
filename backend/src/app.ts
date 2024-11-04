@@ -16,6 +16,7 @@ import {
   joinQueue,
   leaveQueue,
 } from '@/handlers.js';
+import { redis } from '@/utils.js';
 
 // setup servers
 const app = express();
@@ -29,7 +30,6 @@ export const io = new Server(server, {
   cors: corsConfig,
 });
 io.use(verifySessionWs);
-io.on('connection', (socket) => {});
 
 // middlewares
 app.use(cors(corsConfig));
