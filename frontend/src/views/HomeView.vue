@@ -44,7 +44,10 @@ function setRandomNickname() {
         pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
       </p>
       <p class="">Words cannot be repeated in any form, including variations like plurals</p>
-      <p class="">Enter a nickname below and hit start to get paired with a random player</p>
+      <p class="">
+        Enter a nickname below and hit start to get paired with a random player (if no one's online
+        you can test it by opening one normal and one incognito tab)
+      </p>
       <form @submit.prevent="start" class="w-full">
         <div class="relative">
           <input

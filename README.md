@@ -3,7 +3,7 @@
 
 Multiplayer browser game in which users must type related words back and forth under timed pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
 
-If you wish to test it by yourself, simply open one normal and one incognito tab.
+If no one's online you can test it by opening one normal and one incognito tab
 
 ### Developing backend locally
 1. Enter backend folder - `cd backend`
