@@ -18,7 +18,7 @@ import {
 } from '@/handlers.js';
 import { redis } from '@/utils.js';
 
-// setup servers
+// setup server(s)
 const app = express();
 const server = createServer(app);
 const corsConfig = {
