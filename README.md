@@ -1,7 +1,7 @@
 # word-tennis
 ### [word-tennis.jacobcons.com](https://word-tennis.jacobcons.com)
 
-Multiplayer browser game in which users must type related words back and forth under timed pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
+A multiplayer browser game in which users must type related words back and forth under timed pressure. For example 'wave' could be followed by 'ocean', 'crash', 'sine' etc...
 
 If no one's online you can test it by opening one normal and one incognito tab
 
