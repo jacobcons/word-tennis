@@ -3,7 +3,9 @@
 
 This is a multiplayer game in which users must type related words back and forth under timed pressure. For example, a round could go: apple -> computer -> mouse -> cheese -> holes -> pear (not related to "holes", so the round ends)
 
-If no one's online you can test it by opening one normal and one incognito tab
+If no one's online you can test it by opening one normal and one incognito tab.
+
+https://github.com/user-attachments/assets/87357f68-ac20-4dda-8650-1c0c93f92a29
 
 ### Developing backend locally
 1. Enter backend folder - `cd backend`
