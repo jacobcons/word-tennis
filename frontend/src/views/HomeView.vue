@@ -41,7 +41,7 @@ function setRandomNickname() {
       <h1 class="">Word Tennis</h1>
       <p class="">
         This is a multiplayer game in which users must type related words back and forth under timed
-        pressure. For example, a round could go: apple -> computer -> mouse -> cheese -> holes ->
+        pressure. For example a round could go apple: -> computer -> mouse -> cheese -> holes ->
         pear (not related to "holes", so the round ends)
       </p>
       <p class="">Words cannot be repeated in any form, including variations like plurals</p>
